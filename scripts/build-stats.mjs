@@ -40,10 +40,10 @@ const GAMES = [
   { repo: "rl_snake_game", name: "rl_snake_game", tag: "DQN", desc: "A snake that learned not to bite itself" },
   { repo: "flappy_bird_AI", name: "flappy_bird_AI", tag: "NEAT", desc: "Evolved a bird that finally gets gravity" },
 ];
-const STACK = [
-  ["AI / ML", ["PyTorch", "Transformers", "Unsloth", "LangGraph", "LangChain", "MCP"]],
-  ["Product", ["FastAPI", "Next.js", "React", "Pyodide"]],
-  ["Data / infra", ["PostgreSQL", "Neo4j", "Qdrant", "Redis", "MongoDB", "Docker", "GitHub Actions"]],
+const STACK = [ // [label, simple-icons slug or null]
+  ["AI / ML", [["PyTorch", "pytorch"], ["Transformers", "huggingface"], ["Unsloth", null], ["LangGraph", "langgraph"], ["LangChain", "langchain"], ["MCP", "modelcontextprotocol"]]],
+  ["Product", [["FastAPI", "fastapi"], ["Next.js", "nextdotjs"], ["React", "react"], ["Pyodide", null]]],
+  ["Data / infra", [["PostgreSQL", "postgresql"], ["Neo4j", "neo4j"], ["Qdrant", "qdrant"], ["Redis", "redis"], ["MongoDB", "mongodb"], ["Docker", "docker"], ["Actions", "githubactions"]]],
 ];
 
 // ------------------------------------------------------------------ data
@@ -144,6 +144,7 @@ const repoList = Object.values(extRepos).sort((a, b) => b.n - a.n || b.stars - a
 const combinedStars = repoList.reduce((a, e) => a + e.stars, 0);
 const extMerged = ext.filter((p) => p.mergedAt).length;
 const extOpen = ext.filter((p) => p.state === "OPEN").length;
+const ext90 = ext.filter((p) => p.createdAt.slice(0, 10) >= dates[0]).length;
 const extAdds = ext.reduce((a, p) => a + p.additions, 0);
 
 // languages (notebook outputs and markup inflate byte counts, so they're left out)
@@ -281,7 +282,7 @@ function activity(name) {
   s += `<text class="fade" x="40" y="150" font-size="14" fill="${t.muted}">contributions in the last 90 days</text>`;
   const legend = [
     { c: t.o1, name: "Commits", v: r.totalCommitContributions, sub: `across ${r.totalRepositoriesWithContributedCommits} public repos` },
-    { c: t.o2, name: "Pull requests", v: prs90, sub: `${merged90} merged in this window` },
+    { c: t.o2, name: "Pull requests", v: prs90, sub: `opened in the last 90 days · ${merged90} merged` },
     { c: t.o3, name: "Issues & reviews", v: r.totalIssueContributions + r.totalPullRequestReviewContributions, sub: `${r.totalIssueContributions} issues · ${r.totalPullRequestReviewContributions} reviews` },
     { c: t.gray, name: "Private work", v: r.restrictedContributionsCount, sub: "in private repos" },
   ];
@@ -377,10 +378,10 @@ function oss(name) {
   const t = themes[name];
   const rows = repoList.slice(0, 8);
   const W = 960, rowH = 46, top = 250, H = top + rows.length * rowH + 64;
-  let s = frame(t, W, H, ["Open source", "Pull requests", "All time"], [{ label: "By repo", on: true }]);
+  let s = frame(t, W, H, ["Open source", "Pull requests", "All time"], [{ label: `${repoList.length} repos · +${fmt(extAdds)} lines · ${fmt(combinedStars)}★` }]);
 
   s += `<text class="fade" x="40" y="124" font-size="48" font-weight="800" fill="${t.text}" letter-spacing="-1">${ext.length}</text>`;
-  s += `<text class="fade" x="40" y="150" font-size="14" fill="${t.muted}">PRs to ${repoList.length} repos · +${fmt(extAdds)} lines · ${fmt(combinedStars)}★ combined</text>`;
+  s += `<text class="fade" x="40" y="150" font-size="14" fill="${t.muted}">PRs to other people's repos, all time (${ext90} in the last 90 days)</text>`;
   const mini = [["Merged", extMerged, t.o1], ["In review", extOpen, t.o2], ["Closed", ext.length - extMerged - extOpen, t.gray]];
   mini.forEach(([k, v, c], i) => {
     const x = 450 + i * 160;
@@ -419,7 +420,7 @@ function oss(name) {
     s += `\n`;
   });
   const rest = repoList.length - rows.length;
-  s += `<text x="40" y="${H - 26}" font-size="12" fill="${t.faint}">${rest > 0 ? `+ ${rest} more repos · ` : ""}live from the GitHub API, refreshed daily</text>`;
+  s += `<text x="40" y="${H - 26}" font-size="12" fill="${t.faint}">${rest > 0 ? `+ ${rest} more repos · ` : ""}live from the GitHub API, refreshed every 6 hours</text>`;
   s += `</svg>\n`;
   writeFileSync(`assets/oss-${name}.svg`, s);
 }
@@ -428,7 +429,7 @@ function oss(name) {
 function arcade(name) {
   const t = themes[name];
   const W = 960, H = 500;
-  let s = frame(t, W, H, ["Arcade", "RL agents", `${GAMES.length + 1} games`], [{ label: "Wordle replay", on: true }]);
+  let s = frame(t, W, H, ["Reinforcement learning", "Game-playing agents"], [{ label: "Wordle replay", on: true }]);
   s = s.replace("</style>", `  .t { transform-box: fill-box; transform-origin: center; animation: flip .5s ease-in-out both; }
   @keyframes flip { 0% { transform: scaleY(1); } 50% { transform: scaleY(0); } 100% { transform: scaleY(1); } }
   .ch { opacity: 0; animation: fade .12s ease-out forwards; }
@@ -530,42 +531,68 @@ ${STYLE}
 }
 
 // ------------------------------------------------------------------ toolbox card
-function toolbox(name) {
+const iconCache = {};
+async function icon(slug, color) {
+  if (!slug) return null;
+  const key = slug + color;
+  if (!(key in iconCache)) {
+    const res = await fetch(`https://cdn.simpleicons.org/${slug}/${color.slice(1)}`);
+    iconCache[key] = res.ok ? `data:image/svg+xml;base64,${Buffer.from(await res.text()).toString("base64")}` : null;
+  }
+  return iconCache[key];
+}
+
+async function toolbox(name) {
   const t = themes[name];
-  const W = 960, H = 410;
-  let s = frame(t, W, H, ["Toolbox", "Languages", `${user.repositories.totalCount} public repos`], [{ label: "By bytes", on: true }]);
-  s += sectionTitle(t, 40, 100, "Code by language", { x: W - 40, html: "notebooks &amp; markup excluded" });
-  const bx = 40, bw = W - 80, by = 116;
-  let cx = bx;
+  const W = 960, H = 470;
+  let s = frame(t, W, H, ["Toolbox", "Languages & stack", `${user.repositories.totalCount} public repos`]);
+
+  // donut of languages
+  const cx = 190, cy = 232, R = 78, SW = 24, C = 2 * Math.PI * R;
+  s += sectionTitle(t, 40, 100, "Languages");
+  s += `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="${t.track}" stroke-width="${SW}"/>`;
+  let acc = 0;
   langRows.forEach(([lname, size], i) => {
-    const w = (size / langTotal) * bw;
-    s += `<rect class="grow" ${delay(i * 0.08)} x="${cx.toFixed(1)}" y="${by}" width="${Math.max(0, w - 3).toFixed(1)}" height="12" rx="3" fill="${lname === "Other" ? t.gray : t.ramp[i]}"/>`;
-    cx += w;
+    const frac = size / langTotal, len = Math.max(0, frac * C - 3);
+    s += `<circle class="fade" ${delay(0.15 + i * 0.12)} cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="${lname === "Other" ? t.gray : t.ramp[i]}" stroke-width="${SW}" stroke-dasharray="${len.toFixed(1)} ${C.toFixed(1)}" stroke-dashoffset="${(-acc * C).toFixed(1)}" transform="rotate(-90 ${cx} ${cy})"/>`;
+    acc += frac;
   });
+  const [topName, topSize] = langRows[0];
+  s += `<text x="${cx}" y="${cy - 2}" text-anchor="middle" font-size="30" font-weight="800" fill="${t.text}">${Math.round(pct(topSize, langTotal))}%</text>`;
+  s += `<text x="${cx}" y="${cy + 20}" text-anchor="middle" font-size="13" fill="${t.muted}">${esc(topName)}</text>`;
   langRows.forEach(([lname, size], i) => {
-    const col = i % 4, row = Math.floor(i / 4);
-    const x = 40 + col * 225, y = 160 + row * 28;
-    s += `<g class="fade" ${delay(0.3 + i * 0.05)}><rect x="${x}" y="${y - 10}" width="10" height="10" rx="2" fill="${lname === "Other" ? t.gray : t.ramp[i]}"/><text x="${x + 18}" y="${y}" font-size="14" fill="${t.text}">${esc(lname)} <tspan fill="${t.muted}">${pctStr(pct(size, langTotal))}</tspan></text></g>`;
+    const x = 40 + (i % 2) * 150, y = 356 + Math.floor(i / 2) * 26;
+    s += `<g class="fade" ${delay(0.4 + i * 0.06)}><rect x="${x}" y="${y - 10}" width="10" height="10" rx="2" fill="${lname === "Other" ? t.gray : t.ramp[i]}"/><text x="${x + 18}" y="${y}" font-size="13" fill="${t.text}">${esc(lname)} <tspan fill="${t.muted}">${pctStr(pct(size, langTotal))}</tspan></text></g>`;
   });
-  s += `<line x1="40" y1="218" x2="${W - 40}" y2="218" stroke="${t.border}"/>`;
-  s += sectionTitle(t, 40, 254, "Frameworks & infra");
-  STACK.forEach(([label, items], rr) => {
-    const y = 280 + rr * 40;
-    s += `<text x="40" y="${y + 19}" font-size="13" fill="${t.muted}">${label}</text>`;
-    let x = 160;
-    items.forEach((it, j) => {
-      const w = textW(it, 13) + 26;
-      s += `<g class="fade" ${delay(0.5 + rr * 0.15 + j * 0.04)}><rect x="${x}" y="${y}" width="${w}" height="28" rx="14" fill="${t.pill}" stroke="${t.border}"/><text x="${x + w / 2}" y="${y + 19}" text-anchor="middle" font-size="13" font-weight="500" fill="${t.text}">${esc(it)}</text></g>`;
-      x += w + 8;
-    });
-  });
-  s += `</svg>\n`;
+  s += `<text x="40" y="${H - 22}" font-size="11" fill="${t.faint}">by bytes · notebooks &amp; markup excluded</text>`;
+  s += `<line x1="360" y1="84" x2="360" y2="${H - 28}" stroke="${t.border}"/>`;
+
+  // icon grid
+  const gx = 396, step = 76, tileS = 52;
+  for (let g = 0; g < STACK.length; g++) {
+    const [label, items] = STACK[g];
+    const gy = 100 + g * 118;
+    s += `<text x="${gx}" y="${gy}" font-size="12" font-weight="600" letter-spacing="1" fill="${t.muted}">${esc(label.toUpperCase())}</text>`;
+    for (let j = 0; j < items.length; j++) {
+      const [tool, slug] = items[j];
+      const x = gx + j * step, y = gy + 14;
+      const img = await icon(slug, t.o1);
+      s += `<g class="pop" ${delay(0.3 + g * 0.2 + j * 0.05)}>`;
+      s += `<rect x="${x}" y="${y}" width="${tileS}" height="${tileS}" rx="14" fill="${t.pill}" stroke="${t.border}"/>`;
+      s += img
+        ? `<image href="${img}" x="${x + 13}" y="${y + 13}" width="26" height="26"/>`
+        : `<text x="${x + tileS / 2}" y="${y + 34}" text-anchor="middle" font-size="22" font-weight="800" fill="${t.o1}">${esc(tool[0])}</text>`;
+      s += `<text x="${x + tileS / 2}" y="${y + tileS + 18}" text-anchor="middle" font-size="11.5" fill="${t.text}">${esc(tool)}</text></g>`;
+    }
+  }
+  s += `</svg>
+`;
   writeFileSync(`assets/toolbox-${name}.svg`, s);
 }
 
 mkdirSync("assets", { recursive: true });
 for (const th of ["dark", "light"]) {
-  activity(th); oss(th); arcade(th); toolbox(th);
+  activity(th); oss(th); arcade(th); await toolbox(th);
   for (const p of PROJECTS) projectTile(p, th);
 }
 console.log(`built cards · ${recentTotal} contributions (90d), ${yearTotal} (year), ${ext.length} OSS PRs`);

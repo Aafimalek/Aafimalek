@@ -49,12 +49,14 @@ I point AI at open math problems and make it **show its work in Lean 4**, so a p
 
 <sub>Write-ups live in <a href="https://github.com/Aafimalek/novel-discoveries">novel-discoveries</a>. Found a bug or an earlier proof? Open an issue there.</sub>
 
-## 🕹️ Arcade
+## 🎮 Teaching small models to play games
+
+I use reinforcement learning to train small models to play games. The board is a replay; the numbers come from wordle-rl's held-out evaluation.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/arcade-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/arcade-light.svg">
-  <img src="assets/arcade-dark.svg" alt="Arcade: an animated Wordle replay solving AGENT in three, wordle-rl's 97% WordleBench win rate next to GPT-5's 99%, and earlier RL agents for Atari, Snake and Flappy Bird" width="100%">
+  <img src="assets/arcade-dark.svg" alt="Reinforcement learning: an animated Wordle replay solving AGENT in three, wordle-rl's 97% WordleBench win rate next to GPT-5's 99%, and earlier RL agents for Atari, Snake and Flappy Bird" width="100%">
 </picture>
 
 <p align="center"><sub>
@@ -108,24 +110,5 @@ I point AI at open math problems and make it **show its work in Lean 4**, so a p
   <source media="(prefers-color-scheme: light)" srcset="assets/toolbox-light.svg">
   <img src="assets/toolbox-dark.svg" alt="Toolbox: code by language across my public repos, plus the frameworks and infrastructure I use" width="100%">
 </picture>
-
-<details>
-<summary>🥚 <b>don't click this</b></summary>
-<br>
-
-```text
-$ sudo hire aafi
-[sudo] password for recruiter: ********
-
-✔ checking vibes .............. immaculate
-✔ checking evals .............. passing
-✔ checking coffee levels ...... dangerously high
-
-→ next step: scroll up, press a badge
-```
-
-You found the egg. That makes you the kind of person I'd like to work with. 🫡
-
-</details>
 
 <p align="center"><sub>Building an AI product or hiring an AI engineer? <a href="mailto:aafimalek2023@gmail.com"><b>Say hi</b></a>. I reply faster than my RL agents converge.</sub></p>

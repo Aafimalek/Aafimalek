@@ -18,7 +18,7 @@
 <g class="fade" style="animation-delay:0.32s"><circle cx="45" cy="247" r="5" fill="#ffc08a"/>
 <text x="60" y="252" font-size="16" font-weight="600" fill="#f3f1f4">Pull requests <tspan font-size="13" font-weight="400" fill="#a19da6">18.5%</tspan></text>
 <text x="370" y="252" text-anchor="end" font-size="18" font-weight="700" fill="#f3f1f4">106</text>
-<text x="40" y="274" font-size="13" fill="#a19da6">23 merged in this window</text></g>
+<text x="40" y="274" font-size="13" fill="#a19da6">opened in the last 90 days · 23 merged</text></g>
 <g class="fade" style="animation-delay:0.44s"><circle cx="45" cy="303" r="5" fill="#c2410c"/>
 <text x="60" y="308" font-size="16" font-weight="600" fill="#f3f1f4">Issues &amp; reviews <tspan font-size="13" font-weight="400" fill="#a19da6">1.4%</tspan></text>
 <text x="370" y="308" text-anchor="end" font-size="18" font-weight="700" fill="#f3f1f4">8</text>

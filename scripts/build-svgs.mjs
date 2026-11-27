@@ -1,156 +1,152 @@
-// Builds the animated SVGs used in the profile README.
+// Builds the animated intro card (terminal + neural-net mascot) used at the top of the README.
 // Run from the repo root: node scripts/build-svgs.mjs
 import { writeFileSync, mkdirSync } from "node:fs";
 
 mkdirSync("assets", { recursive: true });
-
 const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-// ---------------------------------------------------------------- terminal
 const themes = {
   dark: {
-    bg: "#0d1117", bar: "#161b22", border: "#30363d", text: "#c9d1d9",
-    dim: "#484f58", key: "#ff8a3d", accent: "#ffc08a", ok: "#3fb950", robot: "#8b949e",
+    bg: "#1d1b20", bar: "#232026", border: "#353139", text: "#f3f1f4", muted: "#a19da6",
+    dim: "#4a4650", key: "#ff8a3d", soft: "#ffc08a", ok: "#7ee787", edge: "#3a363e", node: "#2a272e",
   },
   light: {
-    bg: "#ffffff", bar: "#f6f8fa", border: "#d0d7de", text: "#24292f",
-    dim: "#afb8c1", key: "#d4590f", accent: "#b3400e", ok: "#1a7f37", robot: "#57606a",
+    bg: "#ffffff", bar: "#f7f6f8", border: "#e3e0e6", text: "#1d1b20", muted: "#65616a",
+    dim: "#c4c0c8", key: "#e0600f", soft: "#b3400e", ok: "#1a7f37", edge: "#e3e0e6", node: "#f4f2f6",
   },
 };
 
-const W = 54; // characters per key/value line
-const kv = (key, value) => {
-  const dots = Math.max(2, W - key.length - value.length - 3);
-  return { key, dots: ".".repeat(dots), value };
-};
-
+// plain-English facts; keep these different from what the cards below already show
+const WIDTH = 50;
+const kv = (key, value) => ({ key, value, dots: ".".repeat(Math.max(2, WIDTH - key.length - value.length - 2)) });
 const info = [
-  { head: "aafi@malek" },
-  { rule: true },
-  kv("OS", "Ahmedabad, Gujarat, IN"),
-  kv("Uptime", "on GitHub since Sep 2021"),
-  kv("Host", "AI / ML Engineer"),
-  kv("Kernel", "agents · retrieval · speech"),
-  kv("Resolution", "evals before vibes"),
-  kv("IDE", "whichever one ships it"),
-  kv("Theme", "orange on dark, obviously"),
-  kv("Status", "open to full-time roles ✓"),
-  { palette: true },
+  kv("Role", "AI / ML Engineer"),
+  kv("Location", "Ahmedabad, India"),
+  kv("Timezone", "IST (UTC+5:30)"),
+  kv("Focus", "agents · retrieval · speech"),
+  kv("On GitHub", "since Sep 2021"),
+  kv("Motto", "evals before vibes"),
+  kv("Open to", "full-time AI roles ✓"),
 ];
 
-// (info is padded below once robot is known)
-// every line is exactly 24 columns; BUBBLE / EYES / CHEST are drawn specially
-const robot = [
-  "  .------------------.  ",
-  "BUBBLE",
-  "  '----.-------------'  ",
-  "        \\               ",
-  "   .----------------.   ",
-  "   |  .--.    .--.  |   ",
-  "EYES",
-  "   |  '--'    '--'  |   ",
-  "   |     \\____/     |   ",
-  "   '-------..-------'   ",
-  "  .--------''--------.  ",
-  " /|  [ AI  /  ML ]   |\\ ",
-  "CHEST",
-  "\\_|__________________|_/",
-  "     |__|      |__|     ",
-  "    (____)    (____)    ",
+// pixel-art mascot: a fox peeking over a laptop. Left halves are mirrored to make each row.
+// K outline · O orange · D dark orange · W cream · E eye · N nose · L laptop edge · S laptop lid
+const FOX_HALF = [
+  "......KK.......",
+  ".....KOK.......",
+  ".....KOOK......",
+  "....KODOK......",
+  "....KODOOKKKKKK",
+  "....KOOOOOOOOOO",
+  "...KOOOOOOOOOOO",
+  "...KOOOOOOOOOOO",
+  "...KOOOEEOOOOOO",
+  "...KOOOEEOOOOOO",
+  "...KWWOOOOOOOOO",
+  "....KWWWWWWWWWN",
+  "....KWWWWWWWWWW",
+  ".....KWWWWWWWWW",
+  "......KKWWWWWWW",
+  "..LLLLWWWLLLLLL",
+  "..LSSSSSSSSSSSS",
+  "..LSSSSSSSSSSSS",
+  "..LSSSSSSSSSSSS",
+  "..LSSSSSSSSSSSS",
+  "..LSSSSSSSSSSSS",
+  "..LSSSSSSSSSSSS",
+  "..LSSSSSSSSSSSS",
+  "..LSSSSSSSSSSSS",
+  "..LLLLLLLLLLLLL",
 ];
-for (const l of robot) if (l.length !== 24 && !/^[A-Z]+$/.test(l)) throw new Error(`robot line not 24 wide: "${l}"`);
-while (info.length < 17) info.splice(info.length - 1, 0, { blank: true });
-const bubbleMsgs = ["beep boop!", "hire aafi :)", "proofs > vibes", "ship > talk"];
+const FOX = FOX_HALF.map((h) => h + [...h].reverse().join(""));
+// glowing logo on the lid (a lambda)
+const LOGO = ["GG...", "..G..", "..GG.", ".G.G.", "G...G"];
+// two tail frames, drawn to the right of the laptop as [col,row,char]
+const TAIL_A = [[28,9,"W"],[29,9,"W"],[28,10,"O"],[29,10,"W"],[28,11,"O"],[29,11,"O"],[28,12,"O"],[29,12,"O"],[28,13,"D"],[28,14,"D"]];
+const TAIL_B = [[30,11,"W"],[31,11,"W"],[29,12,"O"],[30,12,"O"],[31,12,"W"],[28,13,"O"],[29,13,"O"],[30,13,"O"],[28,14,"D"],[29,14,"D"]];
+const FLOATERS = ["λ", "∀", "</>", "✓", "{ }"];
 
-function terminal(name) {
+function card(name) {
   const t = themes[name];
-  const lh = 22;
-  const top = 74;
-  const xL = 34;
-  const xR = 402;
-  const rows = info.length + 2;
-  const height = top + rows * lh + 28;
-  const width = 985;
+  const W = 985, H = 420;
   const font = `'JetBrains Mono','Cascadia Code',Consolas,'SFMono-Regular',Menlo,'DejaVu Sans Mono',monospace`;
-  const start = 1.4; // seconds when the output starts appearing
-
-  let out = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" font-family="${font}" font-size="15">
+  
+  let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="${font}" font-size="15">
 <style>
+  text { font-variant-ligatures: none; }
   .l { opacity: 0; animation: in .35s ease-out forwards; }
   @keyframes in { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: none; } }
-  text { font-variant-ligatures: none; }
   .ch { opacity: 0; animation: show .01s forwards; }
   @keyframes show { to { opacity: 1; } }
   .cursor { animation: blink 1s step-end infinite; }
   @keyframes blink { 50% { opacity: 0; } }
-  .eo { animation: eo 4s step-end infinite; }
-  .ec { opacity: 0; animation: ec 4s step-end infinite; }
-  @keyframes eo { 0%, 90% { opacity: 1; } 92% { opacity: 0; } 96% { opacity: 1; } }
-  @keyframes ec { 0%, 90% { opacity: 0; } 92% { opacity: 1; } 96% { opacity: 0; } }
-  .k { fill: ${t.key}; } .d { fill: ${t.dim}; } .v { fill: ${t.text}; } .a { fill: ${t.accent}; } .o { fill: ${t.ok}; }
+  .eyes { animation: blinkeye 4.5s step-end infinite; }
+  @keyframes blinkeye { 0%, 93% { opacity: 1; } 94%, 97% { opacity: 0; } }
+  .tailA { animation: tA 1.6s step-end infinite; } .tailB { opacity: 0; animation: tB 1.6s step-end infinite; }
+  @keyframes tA { 0% { opacity: 1; } 50% { opacity: 0; } } @keyframes tB { 0% { opacity: 0; } 50% { opacity: 1; } }
+  .logo { animation: logo 2.4s ease-in-out infinite; } @keyframes logo { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+  .float { opacity: 0; animation: float 4.5s ease-out infinite; }
+  @keyframes float { 0% { opacity: 0; transform: translateY(0); } 15% { opacity: 1; } 70% { opacity: .8; } 100% { opacity: 0; transform: translateY(-130px); } }
 </style>
-<rect x="1" y="1" width="${width - 2}" height="${height - 2}" rx="12" fill="${t.bg}" stroke="${t.border}"/>
-<path d="M1 13a12 12 0 0 1 12-12h${width - 26}a12 12 0 0 1 12 12v23H1z" fill="${t.bar}"/>
-<line x1="1" y1="36" x2="${width - 1}" y2="36" stroke="${t.border}"/>
-<circle cx="22" cy="18.5" r="6" fill="#ff5f57"/><circle cx="42" cy="18.5" r="6" fill="#febc2e"/><circle cx="62" cy="18.5" r="6" fill="#28c840"/>
-<text x="${width / 2}" y="23" text-anchor="middle" font-size="13" fill="${t.robot}">aafi@github: ~</text>
-<text x="${xL}" y="${top - 2}" xml:space="preserve"><tspan class="o">aafi@github</tspan><tspan class="v">:</tspan><tspan class="a">~</tspan><tspan class="v">$ </tspan>${[..."neofetch"].map((ch, i) => `<tspan class="v ch" style="animation-delay:${(0.3 + i * 0.1).toFixed(1)}s">${ch}</tspan>`).join("")}</text>
+<rect x="1" y="1" width="${W - 2}" height="${H - 2}" rx="14" fill="${t.bg}" stroke="${t.border}"/>
+<path d="M1 15a14 14 0 0 1 14-14h${W - 30}a14 14 0 0 1 14 14v23H1z" fill="${t.bar}"/>
+<line x1="1" y1="38" x2="${W - 1}" y2="38" stroke="${t.border}"/>
+<circle cx="24" cy="19.5" r="6" fill="#ff5f57"/><circle cx="44" cy="19.5" r="6" fill="#febc2e"/><circle cx="64" cy="19.5" r="6" fill="#28c840"/>
+<text x="${W / 2}" y="24" text-anchor="middle" font-size="13" fill="${t.muted}">aafi@github: ~</text>
 `;
 
-  // robot
-  const ry = top + lh * 2 + 4;
-  const rx = xL + 58;
-  const cyc = 2.5 * bubbleMsgs.length;
-  robot.forEach((line, i) => {
-    const y = ry + i * lh;
-    const d = (start + i * 0.05).toFixed(2);
-    const at = `class="l" style="animation-delay:${d}s"`;
-    if (line === "BUBBLE") {
-      out += `<g ${at}><text x="${rx}" y="${y}" xml:space="preserve" fill="${t.robot}">  |                  |  </text>`;
-      bubbleMsgs.forEach((m, j) => {
-        const pad = 14 - m.length, txt = " ".repeat(Math.floor(pad / 2)) + m + " ".repeat(Math.ceil(pad / 2));
-        out += `<text class="msg" style="animation-delay:${(j * 2.5).toFixed(1)}s" x="${rx}" y="${y}" xml:space="preserve" fill="${t.accent}">     ${esc(txt)}</text>`;
-      });
-      out += `</g>\n`;
-    } else if (line === "EYES") {
-      const eye = (c) => `   |  |<tspan class="k" font-weight="bold">${c}</tspan> |    |<tspan class="k" font-weight="bold">${c}</tspan> |  |   `;
-      out += `<g ${at} fill="${t.robot}"><text x="${rx}" y="${y}" xml:space="preserve" class="eo">${eye("o")}</text><text x="${rx}" y="${y}" xml:space="preserve" class="ec">${eye("-")}</text></g>\n`;
-    } else if (line === "CHEST") {
-      out += `<text ${at} x="${rx}" y="${y}" xml:space="preserve" fill="${t.robot}">/ |  <tspan class="o">&gt;</tspan><tspan class="o cursor">_</tspan>              | \\</text>\n`;
-    } else {
-      out += `<text ${at} x="${rx}" y="${y}" xml:space="preserve" fill="${t.robot}">${esc(line)}</text>\n`;
-    }
-  });
-  out = out.replace("</style>", `  .msg { opacity: 0; animation: msg ${cyc}s step-end infinite; }
-  @keyframes msg { 0% { opacity: 1; } ${(100 / bubbleMsgs.length).toFixed(2)}% { opacity: 0; } }
-</style>`);
+  // prompt + typed command
+  const cmd = "whoami --verbose";
+  s += `<text x="34" y="74" xml:space="preserve"><tspan fill="${t.ok}">aafi@github</tspan><tspan fill="${t.text}">:</tspan><tspan fill="${t.soft}">~</tspan><tspan fill="${t.text}">$ </tspan>${[...cmd].map((c, i) => `<tspan class="ch" style="animation-delay:${(0.3 + i * 0.06).toFixed(2)}s" fill="${t.text}">${esc(c)}</tspan>`).join("")}</text>\n`;
 
-  // info column
+  // ---- mascot
+  const px = 10, mx = 58, my = 92;
+  const pal = {
+    K: name === "dark" ? "#0e0d10" : "#3b2416", O: t.key, D: name === "dark" ? "#c2410c" : "#b3400e",
+    W: "#ffe8d2", E: "#1d1b20", N: "#1d1b20", L: name === "dark" ? "#6e6a73" : "#9c98a1",
+    S: name === "dark" ? "#34303a" : "#e3e0e6", G: t.key,
+  };
+  const px1 = (c, r, ch) => `<rect x="${mx + c * px}" y="${my + r * px}" width="${px}" height="${px}" fill="${pal[ch]}"/>`;
+  let body = "", eyes = "", logo = "", tailA = "", tailB = "";
+  FOX.forEach((row, r) => [...row].forEach((ch, c) => {
+    if (ch === ".") return;
+    if (ch === "E") { body += px1(c, r, "O"); eyes += px1(c, r, "E"); }
+    else body += px1(c, r, ch);
+  }));
+  LOGO.forEach((row, r) => [...row].forEach((ch, c) => { if (ch === "G") logo += px1(c + 13, r + 18, "G"); }));
+  TAIL_A.forEach(([c, r, ch]) => (tailA += px1(c, r, ch)));
+  TAIL_B.forEach(([c, r, ch]) => (tailB += px1(c, r, ch)));
+  s += `<g class="l" style="animation-delay:.9s" shape-rendering="crispEdges">
+<g class="tailA">${tailA}</g><g class="tailB">${tailB}</g>
+${body}<g class="eyes">${eyes}</g><g class="logo">${logo}</g>
+</g>
+`;
+  FLOATERS.forEach((f, i) => {
+    const x = i % 2 ? mx + 33 * px : mx - 3 * px;
+    s += `<text class="float" style="animation-delay:${(1.6 + i * 0.9).toFixed(1)}s" x="${x}" y="${my + 22 * px}" text-anchor="middle" font-size="15" font-weight="bold" fill="${t.key}">${esc(f)}</text>`;
+  });
+  s += `<text class="l" style="animation-delay:1.3s" x="${mx + 15 * px}" y="${my + 25 * px + 30}" text-anchor="middle" font-size="12" fill="${t.muted}">this is Byte. Byte reviews my PRs.</text>
+`;
+
+  // divider
+  s += `<line x1="450" y1="100" x2="450" y2="${H - 40}" stroke="${t.border}"/>`;
+
+  // ---- info column
+  const xR = 490;
+  const start = 0.9;
+  s += `<text class="l" style="animation-delay:${start}s" x="${xR}" y="122" font-size="20" font-weight="bold"><tspan fill="${t.text}">Aafi Malek</tspan></text>`;
+  s += `<text class="l" style="animation-delay:${start + 0.1}s" x="${xR}" y="146" font-size="13" fill="${t.muted}">I build AI that does the work, then measure if it did.</text>`;
+  s += `<line class="l" style="animation-delay:${start + 0.15}s" x1="${xR}" y1="164" x2="${W - 40}" y2="164" stroke="${t.border}"/>`;
   info.forEach((row, i) => {
-    const y = top + lh * (i + 1) + 4;
-    const d = (start + 0.15 + i * 0.09).toFixed(2);
-    const open = `<text class="l" style="animation-delay:${d}s" x="${xR}" y="${y}" xml:space="preserve">`;
-    if (row.blank) return;
-    if (row.head) out += `${open}<tspan class="a" font-weight="bold">aafi</tspan><tspan class="v">@</tspan><tspan class="a" font-weight="bold">malek</tspan></text>\n`;
-    else if (row.rule) out += `${open}<tspan class="d">${"─".repeat(W)}</tspan></text>\n`;
-    else if (row.section) out += `${open}<tspan class="d">── </tspan><tspan class="a">${row.section}</tspan><tspan class="d"> ${"─".repeat(W - row.section.length - 4)}</tspan></text>\n`;
-    else if (row.palette) {
-      const cols = ["#3a1a08", "#6b2a0c", "#9a3412", "#c2410c", "#f26a1b", "#ff8a3d", "#ffc08a", "#ffe4cc"];
-      out += `<g class="l" style="animation-delay:${d}s">` +
-        cols.map((c, j) => `<rect x="${xR + j * 30}" y="${y - 14}" width="26" height="18" rx="3" fill="${c}" stroke="${t.border}"/>`).join("") +
-        `</g>\n`;
-    } else out += `${open}<tspan class="k">${esc(row.key)}</tspan><tspan class="v">: </tspan><tspan class="d">${row.dots}</tspan><tspan class="v"> ${esc(row.value)}</tspan></text>\n`;
+    const y = 196 + i * 27;
+    s += `<text class="l" style="animation-delay:${(start + 0.25 + i * 0.1).toFixed(2)}s" x="${xR}" y="${y}" xml:space="preserve"><tspan fill="${t.key}">${esc(row.key)}</tspan><tspan fill="${t.dim}"> ${row.dots} </tspan><tspan fill="${t.text}">${esc(row.value)}</tspan></text>\n`;
   });
-
-  // final prompt with blinking cursor
-  const last = (start + 0.15 + info.length * 0.09 + 0.2).toFixed(2);
-  const py = top + lh * (info.length + 1) + 10;
-  out += `<text class="l" style="animation-delay:${last}s" x="${xL}" y="${py}" xml:space="preserve"><tspan class="o">aafi@github</tspan><tspan class="v">:</tspan><tspan class="a">~</tspan><tspan class="v">$ </tspan><tspan class="v cursor">█</tspan></text>\n`;
-  out += `</svg>\n`;
-  writeFileSync(`assets/terminal-${name}.svg`, out);
+  const py = 196 + info.length * 27 + 14;
+  s += `<text class="l" style="animation-delay:${(start + 0.35 + info.length * 0.1).toFixed(2)}s" x="${xR}" y="${py}" xml:space="preserve"><tspan fill="${t.ok}">aafi@github</tspan><tspan fill="${t.text}">:</tspan><tspan fill="${t.soft}">~</tspan><tspan fill="${t.text}">$ </tspan><tspan class="cursor" fill="${t.text}">█</tspan></text>\n`;
+  s += `</svg>\n`;
+  writeFileSync(`assets/terminal-${name}.svg`, s);
 }
 
-terminal("dark");
-terminal("light");
-
+card("dark");
+card("light");
 console.log("built assets/terminal-dark.svg, assets/terminal-light.svg");
