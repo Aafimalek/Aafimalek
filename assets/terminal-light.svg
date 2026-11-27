@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="985" height="608" viewBox="0 0 985 608" font-family="'JetBrains Mono','Cascadia Code',Consolas,'SFMono-Regular',Menlo,'DejaVu Sans Mono',monospace" font-size="15">
+<style>
+  .l { opacity: 0; animation: in .35s ease-out forwards; }
+  @keyframes in { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: none; } }
+  text { font-variant-ligatures: none; }
+  .ch { opacity: 0; animation: show .01s forwards; }
+  @keyframes show { to { opacity: 1; } }
+  .cursor { animation: blink 1s step-end infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .eo { animation: eo 4s step-end infinite; }
+  .ec { opacity: 0; animation: ec 4s step-end infinite; }
+  @keyframes eo { 0%, 90% { opacity: 1; } 92% { opacity: 0; } 96% { opacity: 1; } }
+  @keyframes ec { 0%, 90% { opacity: 0; } 92% { opacity: 1; } 96% { opacity: 0; } }
+  .k { fill: #d4590f; } .d { fill: #afb8c1; } .v { fill: #24292f; } .a { fill: #0969da; } .o { fill: #1a7f37; }
+  .msg { opacity: 0; animation: msg 10s step-end infinite; }
+  @keyframes msg { 0% { opacity: 1; } 25.00% { opacity: 0; } }
+</style>
+<rect x="1" y="1" width="983" height="606" rx="12" fill="#ffffff" stroke="#d0d7de"/>
+<path d="M1 13a12 12 0 0 1 12-12h959a12 12 0 0 1 12 12v23H1z" fill="#f6f8fa"/>
+<line x1="1" y1="36" x2="984" y2="36" stroke="#d0d7de"/>
+<circle cx="22" cy="18.5" r="6" fill="#ff5f57"/><circle cx="42" cy="18.5" r="6" fill="#febc2e"/><circle cx="62" cy="18.5" r="6" fill="#28c840"/>
+<text x="492.5" y="23" text-anchor="middle" font-size="13" fill="#57606a">aafi@github: ~</text>
+<text x="34" y="72" xml:space="preserve"><tspan class="o">aafi@github</tspan><tspan class="v">:</tspan><tspan class="a">~</tspan><tspan class="v">$ </tspan><tspan class="v ch" style="animation-delay:0.3s">n</tspan><tspan class="v ch" style="animation-delay:0.4s">e</tspan><tspan class="v ch" style="animation-delay:0.5s">o</tspan><tspan class="v ch" style="animation-delay:0.6s">f</tspan><tspan class="v ch" style="animation-delay:0.7s">e</tspan><tspan class="v ch" style="animation-delay:0.8s">t</tspan><tspan class="v ch" style="animation-delay:0.9s">c</tspan><tspan class="v ch" style="animation-delay:1.0s">h</tspan></text>
+<text class="l" style="animation-delay:1.40s" x="92" y="122" xml:space="preserve" fill="#57606a">  .------------------.  </text>
+<g class="l" style="animation-delay:1.45s"><text x="92" y="144" xml:space="preserve" fill="#57606a">  |                  |  </text><text class="msg" style="animation-delay:0.0s" x="92" y="144" xml:space="preserve" fill="#0969da">       beep boop!  </text><text class="msg" style="animation-delay:2.5s" x="92" y="144" xml:space="preserve" fill="#0969da">      hire aafi :) </text><text class="msg" style="animation-delay:5.0s" x="92" y="144" xml:space="preserve" fill="#0969da">     proofs &gt; vibes</text><text class="msg" style="animation-delay:7.5s" x="92" y="144" xml:space="preserve" fill="#0969da">      ship &gt; talk  </text></g>
+<text class="l" style="animation-delay:1.50s" x="92" y="166" xml:space="preserve" fill="#57606a">  '----.-------------'  </text>
+<text class="l" style="animation-delay:1.55s" x="92" y="188" xml:space="preserve" fill="#57606a">        \               </text>
+<text class="l" style="animation-delay:1.60s" x="92" y="210" xml:space="preserve" fill="#57606a">   .----------------.   </text>
+<text class="l" style="animation-delay:1.65s" x="92" y="232" xml:space="preserve" fill="#57606a">   |  .--.    .--.  |   </text>
+<g class="l" style="animation-delay:1.70s" fill="#57606a"><text x="92" y="254" xml:space="preserve" class="eo">   |  |<tspan class="k" font-weight="bold">o</tspan> |    |<tspan class="k" font-weight="bold">o</tspan> |  |   </text><text x="92" y="254" xml:space="preserve" class="ec">   |  |<tspan class="k" font-weight="bold">-</tspan> |    |<tspan class="k" font-weight="bold">-</tspan> |  |   </text></g>
+<text class="l" style="animation-delay:1.75s" x="92" y="276" xml:space="preserve" fill="#57606a">   |  '--'    '--'  |   </text>
+<text class="l" style="animation-delay:1.80s" x="92" y="298" xml:space="preserve" fill="#57606a">   |     \____/     |   </text>
+<text class="l" style="animation-delay:1.85s" x="92" y="320" xml:space="preserve" fill="#57606a">   '-------..-------'   </text>
+<text class="l" style="animation-delay:1.90s" x="92" y="342" xml:space="preserve" fill="#57606a">  .--------''--------.  </text>
+<text class="l" style="animation-delay:1.95s" x="92" y="364" xml:space="preserve" fill="#57606a"> /|  [ AI  /  ML ]   |\ </text>
+<text class="l" style="animation-delay:2.00s" x="92" y="386" xml:space="preserve" fill="#57606a">/ |  <tspan class="o">&gt;</tspan><tspan class="o cursor">_</tspan>              | \</text>
+<text class="l" style="animation-delay:2.05s" x="92" y="408" xml:space="preserve" fill="#57606a">\_|__________________|_/</text>
+<text class="l" style="animation-delay:2.10s" x="92" y="430" xml:space="preserve" fill="#57606a">     |__|      |__|     </text>
+<text class="l" style="animation-delay:2.15s" x="92" y="452" xml:space="preserve" fill="#57606a">    (____)    (____)    </text>
+<text class="l" style="animation-delay:1.55s" x="402" y="100" xml:space="preserve"><tspan class="a" font-weight="bold">aafi</tspan><tspan class="v">@</tspan><tspan class="a" font-weight="bold">malek</tspan></text>
+<text class="l" style="animation-delay:1.64s" x="402" y="122" xml:space="preserve"><tspan class="d">──────────────────────────────────────────────────────</tspan></text>
+<text class="l" style="animation-delay:1.73s" x="402" y="144" xml:space="preserve"><tspan class="k">OS</tspan><tspan class="v">: </tspan><tspan class="d">...........................</tspan><tspan class="v"> Ahmedabad, Gujarat, IN</tspan></text>
+<text class="l" style="animation-delay:1.82s" x="402" y="166" xml:space="preserve"><tspan class="k">Uptime</tspan><tspan class="v">: </tspan><tspan class="d">.....................</tspan><tspan class="v"> on GitHub since Sep 2021</tspan></text>
+<text class="l" style="animation-delay:1.91s" x="402" y="188" xml:space="preserve"><tspan class="k">Host</tspan><tspan class="v">: </tspan><tspan class="d">...............................</tspan><tspan class="v"> AI / ML Engineer</tspan></text>
+<text class="l" style="animation-delay:2.00s" x="402" y="210" xml:space="preserve"><tspan class="k">Kernel</tspan><tspan class="v">: </tspan><tspan class="d">..................</tspan><tspan class="v"> agents · retrieval · speech</tspan></text>
+<text class="l" style="animation-delay:2.09s" x="402" y="232" xml:space="preserve"><tspan class="k">Shell</tspan><tspan class="v">: </tspan><tspan class="d">..................</tspan><tspan class="v"> Python · TypeScript · Lean 4</tspan></text>
+<text class="l" style="animation-delay:2.18s" x="402" y="254" xml:space="preserve"><tspan class="k">Packages</tspan><tspan class="v">: </tspan><tspan class="d">................</tspan><tspan class="v"> PyTorch, LangGraph, FastAPI</tspan></text>
+<text class="l" style="animation-delay:2.27s" x="402" y="276" xml:space="preserve"><tspan class="k">IDE</tspan><tspan class="v">: </tspan><tspan class="d">..........................</tspan><tspan class="v"> whichever one ships it</tspan></text>
+<text class="l" style="animation-delay:2.45s" x="402" y="320" xml:space="preserve"><tspan class="k">Hobbies.RL</tspan><tspan class="v">: </tspan><tspan class="d">.............</tspan><tspan class="v"> bots that play Wordle, Atari</tspan></text>
+<text class="l" style="animation-delay:2.54s" x="402" y="342" xml:space="preserve"><tspan class="k">Hobbies.Math</tspan><tspan class="v">: </tspan><tspan class="d">........</tspan><tspan class="v"> Lean 4 proofs on Erdős problems</tspan></text>
+<text class="l" style="animation-delay:2.63s" x="402" y="364" xml:space="preserve"><tspan class="k">Status</tspan><tspan class="v">: </tspan><tspan class="d">....................</tspan><tspan class="v"> open to full-time roles ✓</tspan></text>
+<text class="l" style="animation-delay:2.81s" x="402" y="408" xml:space="preserve"><tspan class="d">── </tspan><tspan class="a">Contact</tspan><tspan class="d"> ───────────────────────────────────────────</tspan></text>
+<text class="l" style="animation-delay:2.90s" x="402" y="430" xml:space="preserve"><tspan class="k">Email</tspan><tspan class="v">: </tspan><tspan class="d">.......................</tspan><tspan class="v"> aafimalek2023@gmail.com</tspan></text>
+<text class="l" style="animation-delay:2.99s" x="402" y="452" xml:space="preserve"><tspan class="k">LinkedIn</tspan><tspan class="v">: </tspan><tspan class="d">..............................</tspan><tspan class="v"> in/aafi-malek</tspan></text>
+<text class="l" style="animation-delay:3.08s" x="402" y="474" xml:space="preserve"><tspan class="k">X</tspan><tspan class="v">: </tspan><tspan class="d">....................................</tspan><tspan class="v"> @aafimalek2032</tspan></text>
+<text class="l" style="animation-delay:3.17s" x="402" y="496" xml:space="preserve"><tspan class="k">Medium</tspan><tspan class="v">: </tspan><tspan class="d">...................................</tspan><tspan class="v"> @Aafimalek</tspan></text>
+<g class="l" style="animation-delay:3.35s"><rect x="402" y="526" width="26" height="18" rx="3" fill="#0d1117" stroke="#d0d7de"/><rect x="432" y="526" width="26" height="18" rx="3" fill="#ff5f57" stroke="#d0d7de"/><rect x="462" y="526" width="26" height="18" rx="3" fill="#3fb950" stroke="#d0d7de"/><rect x="492" y="526" width="26" height="18" rx="3" fill="#febc2e" stroke="#d0d7de"/><rect x="522" y="526" width="26" height="18" rx="3" fill="#2f6bff" stroke="#d0d7de"/><rect x="552" y="526" width="26" height="18" rx="3" fill="#bc8cff" stroke="#d0d7de"/><rect x="582" y="526" width="26" height="18" rx="3" fill="#39c5cf" stroke="#d0d7de"/><rect x="612" y="526" width="26" height="18" rx="3" fill="#e6edf3" stroke="#d0d7de"/></g>
+<text class="l" style="animation-delay:3.64s" x="34" y="568" xml:space="preserve"><tspan class="o">aafi@github</tspan><tspan class="v">:</tspan><tspan class="a">~</tspan><tspan class="v">$ </tspan><tspan class="v cursor">█</tspan></text>
+</svg>
