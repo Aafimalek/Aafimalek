@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="460" height="210" viewBox="0 0 460 210" font-family="'Inter','Segoe UI',-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif">
+<style>
+  .fade { opacity: 0; animation: fade .6s ease-out forwards; }
+  @keyframes fade { to { opacity: 1; } }
+  .draw { stroke-dasharray: 2400; stroke-dashoffset: 2400; animation: draw 1.8s ease-out forwards; }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  .grow { transform-box: fill-box; transform-origin: left center; transform: scaleX(0); animation: grow .9s cubic-bezier(.2,.8,.2,1) forwards; }
+  @keyframes grow { to { transform: scaleX(1); } }
+  .pop { transform-box: fill-box; transform-origin: center; opacity: 0; animation: popin .35s ease-out forwards; }
+  @keyframes popin { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
+</style>
+<defs><linearGradient id="mg-latin-light" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f26a1b" stop-opacity=".16"/><stop offset=".55" stop-color="#f26a1b" stop-opacity="0"/></linearGradient></defs>
+<rect x="1" y="1" width="458" height="208" rx="14" fill="#ffffff" stroke="#e3e0e6"/>
+<rect x="1" y="1" width="458" height="208" rx="14" fill="url(#mg-latin-light)"/>
+<rect x="1" y="1" width="5" height="208" rx="2.5" fill="#f26a1b"/>
+<rect x="26" y="22" width="133.2" height="22" rx="11" fill="none" stroke="#f26a1b"/><text x="92.6" y="37" text-anchor="middle" font-size="11" font-weight="700" letter-spacing=".8" fill="#f26a1b">COMBINATORICS</text><g transform="translate(328,22)"><rect width="108" height="22" rx="11" fill="#f26a1b"/><path d="M12 11.5l3.2 3.2 6-6.4" stroke="#ffffff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><text x="30" y="15.5" font-size="11" font-weight="700" fill="#ffffff">Lean-checked</text></g><text x="26" y="80" font-size="20" font-weight="700" fill="#1d1b20">Just above the Latin-square bound</text><text x="26" y="108" font-size="14" fill="#65616a">The first sizes of maximal orthogonal partial Latin</text><text x="26" y="127" font-size="14" fill="#65616a">squares past 3s².</text><line x1="26" y1="166" x2="436" y2="166" stroke="#eeebf0"/><text x="26" y="192" font-size="12.5" fill="#1d1b20"><tspan fill="#f26a1b" font-weight="700">✓</tspan> Lean 4 gap theorem</text><text x="181.25" y="192" font-size="12.5" fill="#1d1b20"><tspan fill="#f26a1b" font-weight="700">✓</tspan> exhaustive checks</text><text x="436" y="192" text-anchor="end" font-size="14" font-weight="700" fill="#f26a1b">↗</text></svg>

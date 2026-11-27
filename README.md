@@ -36,18 +36,34 @@
 
 <p align="right"><sub><a href="https://github.com/pulls?q=is%3Apr+author%3AAafimalek+-user%3AAafimalek">browse every PR →</a></sub></p>
 
-## 🧮 Side quest: proving things
+## 🧮 Open math problems, machine-checked
 
-I point AI at open math problems and make it **show its work in Lean 4**, so a proof checker (not vibes) decides if it's right.
+AI-assisted results on open problems in number theory and combinatorics. Each one ships with Lean 4 code a proof checker accepts, so the computer, not me, signs off. Full write-ups in [novel-discoveries](https://github.com/Aafimalek/novel-discoveries).
 
-| | Result | Receipts |
-|---|---|---|
-| 🔢 | [Fink's conjecture on recursive divisors](https://github.com/Aafimalek/fink-recursive-divisors) | Lean 4 proof + exact check to 10⁶ |
-| 🎲 | [Erdős #385 & #430 hold for *almost all* n](https://github.com/Aafimalek/erdos-385-almost-all) | Lean 4 density theorems |
-| 🟧 | [The first sizes above the Latin-square bound](https://github.com/Aafimalek/latin-square-gap) | Lean 4 gap theorem + exhaustive checks |
-| 🎖️ | [Euler's 36 officers, small maximal arrangements](https://github.com/Aafimalek/novel-discoveries/tree/main/euler-36-officers-disconnected) | Lean 4 witness + 13 SAT certificates |
-
-<sub>Write-ups live in <a href="https://github.com/Aafimalek/novel-discoveries">novel-discoveries</a>. Found a bug or an earlier proof? Open an issue there.</sub>
+<p align="center">
+<a href="https://github.com/Aafimalek/fink-recursive-divisors"><picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/math-fink-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/math-fink-light.svg">
+  <img src="assets/math-fink-dark.svg" alt="Fink's conjecture on recursive divisors: Lean 4 proof and exact check to 10^6" width="49%">
+</picture></a>
+<a href="https://github.com/Aafimalek/erdos-385-almost-all"><picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/math-erdos-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/math-erdos-light.svg">
+  <img src="assets/math-erdos-dark.svg" alt="Erdős Problems 385 and 430 hold for almost all n: Lean 4 density theorems" width="49%">
+</picture></a>
+</p>
+<p align="center">
+<a href="https://github.com/Aafimalek/latin-square-gap"><picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/math-latin-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/math-latin-light.svg">
+  <img src="assets/math-latin-dark.svg" alt="The first sizes above the Latin-square bound: Lean 4 gap theorem and exhaustive checks" width="49%">
+</picture></a>
+<a href="https://github.com/Aafimalek/novel-discoveries/tree/main/euler-36-officers-disconnected"><picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/math-euler-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/math-euler-light.svg">
+  <img src="assets/math-euler-dark.svg" alt="Euler's 36 officers, small maximal arrangements: Lean 4 witness and 13 SAT certificates" width="49%">
+</picture></a>
+</p>
 
 ## 🎮 Teaching small models to play games
 
@@ -68,47 +84,12 @@ I use reinforcement learning to train small models to play games. The board is a
   <a href="https://github.com/Aafimalek/flappy_bird_AI">flappy_bird_AI</a>
 </sub></p>
 
-## 🛠️ Things I've built
-
-<p align="center">
-<a href="https://github.com/Aafimalek/prompt_to_animate"><picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/project-prompt_to_animate-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="assets/project-prompt_to_animate-light.svg">
-  <img src="assets/project-prompt_to_animate-dark.svg" alt="Manimancer: prompt to rendered Manim animation" width="49%">
-</picture></a>
-<a href="https://github.com/Aafimalek/csv_chat"><picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/project-csv_chat-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="assets/project-csv_chat-light.svg">
-  <img src="assets/project-csv_chat-dark.svg" alt="QueryCSV: privacy-first CSV analysis in the browser" width="49%">
-</picture></a>
-<a href="https://github.com/Aafimalek/graphdb"><picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/project-graphdb-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="assets/project-graphdb-light.svg">
-  <img src="assets/project-graphdb-dark.svg" alt="Graph Q&A: ask a Neo4j graph in plain English" width="49%">
-</picture></a>
-<a href="https://github.com/Aafimalek/t3_chat"><picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/project-t3_chat-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="assets/project-t3_chat-light.svg">
-  <img src="assets/project-t3_chat-dark.svg" alt="t3_chat: multi-model AI chat with LangGraph and web search" width="49%">
-</picture></a>
-<a href="https://github.com/Aafimalek/advanced_rag"><picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/project-advanced_rag-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="assets/project-advanced_rag-light.svg">
-  <img src="assets/project-advanced_rag-dark.svg" alt="DocChat AI: chat with your documents (RAG)" width="49%">
-</picture></a>
-<a href="https://github.com/Aafimalek/learning"><picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/project-learning-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="assets/project-learning-light.svg">
-  <img src="assets/project-learning-dark.svg" alt="learning: my public logbook" width="49%">
-</picture></a>
-</p>
-
 ## 🧰 Toolbox
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/toolbox-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/toolbox-light.svg">
-  <img src="assets/toolbox-dark.svg" alt="Toolbox: code by language across my public repos, plus the frameworks and infrastructure I use" width="100%">
+  <img src="assets/toolbox-dark.svg" alt="Toolbox: language split across my public repos and 51 tools across ML, LLMs and agents, data and retrieval, backend, frontend and infra" width="100%">
 </picture>
 
 <p align="center"><sub>Building an AI product or hiring an AI engineer? <a href="mailto:aafimalek2023@gmail.com"><b>Say hi</b></a>. I reply faster than my RL agents converge.</sub></p>

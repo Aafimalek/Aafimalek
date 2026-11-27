@@ -21,29 +21,36 @@ async function gql(query, variables = {}) {
 }
 
 // ------------------------------------------------------------------ content you may want to edit
-const PROJECTS = [
-  { repo: "prompt_to_animate", title: "Manimancer", live: "manimancer.fun",
-    desc: "Plain-English prompt in, rendered Manim animation out. Next.js front end, FastAPI and Redis render workers." },
-  { repo: "csv_chat", title: "QueryCSV",
-    desc: "Privacy-first CSV analysis. Your data stays in the browser (Pyodide); only the schema reaches the LLM." },
-  { repo: "graphdb", title: "Graph Q&A",
-    desc: "Ask a Neo4j graph questions in plain English, then see the generated Cypher and the graph it returns." },
-  { repo: "t3_chat", title: "t3_chat",
-    desc: "A T3.chat-style AI chat app with LangGraph agents, web search and several models behind one UI." },
-  { repo: "advanced_rag", title: "DocChat AI",
-    desc: "Upload documents and chat with them. A RAG app with FastAPI, ChromaDB retrieval and a React front end." },
-  { repo: "learning", title: "learning",
-    desc: "My public logbook: notes and notebooks on everything I'm learning, kept so future me can find them." },
+const MATH = [
+  { id: "fink", repo: "fink-recursive-divisors", field: "Number theory",
+    title: "Fink's conjecture on recursive divisors",
+    result: "Conjecture 1, settled with a full formal proof.",
+    checks: ["Lean 4 proof", "exact check to 10⁶"] },
+  { id: "erdos", repo: "erdos-385-almost-all", field: "Number theory",
+    title: "Erdős Problems #385 and #430",
+    result: "Both hold for almost all n. Still open for every n.",
+    checks: ["Lean 4 density theorems", "exact computation"] },
+  { id: "latin", repo: "latin-square-gap", field: "Combinatorics",
+    title: "Just above the Latin-square bound",
+    result: "The first sizes of maximal orthogonal partial Latin squares past 3s².",
+    checks: ["Lean 4 gap theorem", "exhaustive checks"] },
+  { id: "euler", repo: "novel-discoveries", field: "Combinatorics",
+    title: "Euler's 36 officers, small and maximal",
+    result: "Small maximal arrangements, with a written reduction.",
+    checks: ["Lean 4 witness", "13 SAT certificates"] },
 ];
 const GAMES = [
   { repo: "atari_rl", name: "atari_rl", tag: "DQN", desc: "Learned Atari Breakout from pixels over 6M steps" },
   { repo: "rl_snake_game", name: "rl_snake_game", tag: "DQN", desc: "A snake that learned not to bite itself" },
   { repo: "flappy_bird_AI", name: "flappy_bird_AI", tag: "NEAT", desc: "Evolved a bird that finally gets gravity" },
 ];
-const STACK = [ // [label, simple-icons slug or null]
-  ["AI / ML", [["PyTorch", "pytorch"], ["Transformers", "huggingface"], ["Unsloth", null], ["LangGraph", "langgraph"], ["LangChain", "langchain"], ["MCP", "modelcontextprotocol"]]],
-  ["Product", [["FastAPI", "fastapi"], ["Next.js", "nextdotjs"], ["React", "react"], ["Pyodide", null]]],
-  ["Data / infra", [["PostgreSQL", "postgresql"], ["Neo4j", "neo4j"], ["Qdrant", "qdrant"], ["Redis", "redis"], ["MongoDB", "mongodb"], ["Docker", "docker"], ["Actions", "githubactions"]]],
+const STACK = [ // [label, simple-icons slug or null] - every entry shows up in my public repos
+  ["ML & training", [["PyTorch", "pytorch"], ["TensorFlow", "tensorflow"], ["Keras", "keras"], ["scikit-learn", "scikitlearn"], ["Transformers", "huggingface"], ["Unsloth", null], ["TRL", null], ["OpenCV", "opencv"], ["Gymnasium", null]]],
+  ["LLMs & agents", [["LangGraph", "langgraph"], ["LangChain", "langchain"], ["CrewAI", "crewai"], ["MCP", "modelcontextprotocol"], ["Ollama", "ollama"], ["Groq", null], ["OpenAI", null], ["Gemini", "googlegemini"], ["Claude", "claude"], ["LiveKit", "livekit"]]],
+  ["Data & retrieval", [["pandas", "pandas"], ["NumPy", "numpy"], ["ChromaDB", null], ["FAISS", null], ["Qdrant", "qdrant"], ["Neo4j", "neo4j"], ["PostgreSQL", "postgresql"], ["MongoDB", "mongodb"], ["SQLite", "sqlite"], ["Redis", "redis"]]],
+  ["Backend", [["FastAPI", "fastapi"], ["Flask", "flask"], ["Streamlit", "streamlit"], ["Node.js", "nodedotjs"], ["Express", "express"], ["Clerk", "clerk"]]],
+  ["Frontend", [["Next.js", "nextdotjs"], ["React", "react"], ["Tailwind", "tailwindcss"], ["shadcn/ui", "shadcnui"], ["D3.js", "d3"], ["Pyodide", null]]],
+  ["Infra & tooling", [["Docker", "docker"], ["AWS", null], ["Vercel", "vercel"], ["Azure", null], ["Actions", "githubactions"], ["Jupyter", "jupyter"], ["Kaggle", "kaggle"], ["Puppeteer", "puppeteer"], ["Selenium", "selenium"], ["Manim", null]]],
 ];
 
 // ------------------------------------------------------------------ data
@@ -53,7 +60,7 @@ const daysAgo = (n) => new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth()
 const from90 = daysAgo(DAYS - 1);
 const from365 = daysAgo(364);
 
-const repoFields = PROJECTS.concat(GAMES, [{ repo: "wordle-rl" }])
+const repoFields = MATH.concat(GAMES, [{ repo: "wordle-rl" }])
   .map((p, i) => `r${i}: repository(owner:"${LOGIN}", name:"${p.repo}") { name stargazerCount pushedAt primaryLanguage { name } }`)
   .join("\n");
 
@@ -500,34 +507,39 @@ function arcade(name) {
   writeFileSync(`assets/arcade-${name}.svg`, s);
 }
 
-// ------------------------------------------------------------------ project tiles (one SVG each so each is clickable)
-function projectTile(p, name) {
+// ------------------------------------------------------------------ math tiles (one SVG each so each is clickable)
+function mathTile(m, name) {
   const t = themes[name];
-  const info = repoInfo[p.repo] || {};
-  const W = 460, H = 190;
+  const info = repoInfo[m.repo] || {};
+  const W = 460, H = 210;
   let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="${FONT}">
 ${STYLE}
+<defs><linearGradient id="mg-${m.id}-${name}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${t.o1}" stop-opacity=".16"/><stop offset=".55" stop-color="${t.o1}" stop-opacity="0"/></linearGradient></defs>
 <rect x="1" y="1" width="${W - 2}" height="${H - 2}" rx="14" fill="${t.bg}" stroke="${t.border}"/>
-<rect x="24" y="24" width="36" height="36" rx="9" fill="${t.o1}"/>
-<text x="42" y="49" text-anchor="middle" font-size="18" font-weight="800" fill="#ffffff">${esc(p.title[0].toUpperCase())}</text>
-<text x="74" y="40" font-size="18" font-weight="700" fill="${t.text}">${esc(p.title)}</text>
-<text x="74" y="58" font-size="12" fill="${t.muted}">${esc(LOGIN)}/${esc(p.repo)}</text>
+<rect x="1" y="1" width="${W - 2}" height="${H - 2}" rx="14" fill="url(#mg-${m.id}-${name})"/>
+<rect x="1" y="1" width="5" height="${H - 2}" rx="2.5" fill="${t.o1}"/>
 `;
-  if (p.live) {
-    const w = textW(p.live, 12) + 34;
-    s += `<rect x="${W - 24 - w}" y="26" width="${w}" height="24" rx="12" fill="${t.pill}" stroke="${t.border}"/><circle cx="${W - 24 - w + 13}" cy="38" r="4" fill="${t.o1}"><animate attributeName="opacity" values="1;.25;1" dur="1.6s" repeatCount="indefinite"/></circle><text x="${W - 24 - w + 23}" y="42" font-size="12" font-weight="600" fill="${t.text}">${esc(p.live)}</text>`;
-  }
-  wrap(p.desc, 58).slice(0, 3).forEach((line, i) => {
-    s += `<text x="24" y="${92 + i * 20}" font-size="14" fill="${t.text}" fill-opacity=".86">${esc(line)}</text>`;
+  const fw = m.field.length * 8.4 + 24;
+  s += `<rect x="26" y="22" width="${fw}" height="22" rx="11" fill="none" stroke="${t.o1}"/><text x="${26 + fw / 2}" y="37" text-anchor="middle" font-size="11" font-weight="700" letter-spacing=".8" fill="${t.o1}">${esc(m.field.toUpperCase())}</text>`;
+  // verified badge
+  s += `<g transform="translate(${W - 132},22)"><rect width="108" height="22" rx="11" fill="${t.o1}"/><path d="M12 11.5l3.2 3.2 6-6.4" stroke="${name === "dark" ? "#1d1b20" : "#ffffff"}" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><text x="30" y="15.5" font-size="11" font-weight="700" fill="${name === "dark" ? "#1d1b20" : "#ffffff"}">Lean-checked</text></g>`;
+  wrap(m.title, 40).slice(0, 2).forEach((line, i) => {
+    s += `<text x="26" y="${80 + i * 25}" font-size="20" font-weight="700" fill="${t.text}">${esc(line)}</text>`;
   });
-  s += `<line x1="24" y1="${H - 44}" x2="${W - 24}" y2="${H - 44}" stroke="${t.grid}"/>`;
-  const lang = info.primaryLanguage?.name || "—";
-  const pushed = info.pushedAt ? new Date(info.pushedAt).toLocaleString("en-US", { month: "short", year: "numeric", timeZone: "UTC" }) : "";
-  s += `<circle cx="29" cy="${H - 21}" r="5" fill="${t.o1}"/><text x="40" y="${H - 17}" font-size="12" fill="${t.muted}">${esc(lang)}</text>`;
-  s += `<text x="${40 + textW(lang, 12) + 18}" y="${H - 17}" font-size="12" fill="${t.muted}">★ ${info.stargazerCount ?? 0}</text>`;
-  s += `<text x="${W - 24}" y="${H - 17}" text-anchor="end" font-size="12" fill="${t.faint}">updated ${pushed}</text>`;
-  s += `</svg>\n`;
-  writeFileSync(`assets/project-${p.repo}-${name}.svg`, s);
+  const ty = wrap(m.title, 40).length > 1 ? 132 : 108;
+  wrap(m.result, 58).slice(0, 2).forEach((line, i) => {
+    s += `<text x="26" y="${ty + i * 19}" font-size="14" fill="${t.muted}">${esc(line)}</text>`;
+  });
+  s += `<line x1="26" y1="${H - 44}" x2="${W - 24}" y2="${H - 44}" stroke="${t.grid}"/>`;
+  let x = 26;
+  m.checks.forEach((c) => {
+    s += `<text x="${x}" y="${H - 18}" font-size="12.5" fill="${t.text}"><tspan fill="${t.o1}" font-weight="700">✓</tspan> ${esc(c)}</text>`;
+    x += textW(c, 12.5) + 36;
+  });
+  s += `<text x="${W - 24}" y="${H - 18}" text-anchor="end" font-size="14" font-weight="700" fill="${t.o1}">↗</text>`;
+  s += `</svg>
+`;
+  writeFileSync(`assets/math-${m.id}-${name}.svg`, s);
 }
 
 // ------------------------------------------------------------------ toolbox card
@@ -544,12 +556,16 @@ async function icon(slug, color) {
 
 async function toolbox(name) {
   const t = themes[name];
-  const W = 960, H = 470;
-  let s = frame(t, W, H, ["Toolbox", "Languages & stack", `${user.repositories.totalCount} public repos`]);
+  const W = 960;
+  const perRow = 10, step = 74, tileS = 46, labelW = 150, gx = 40 + labelW;
+  const rowsPer = STACK.map(([, items]) => Math.ceil(items.length / perRow));
+  const top = 300;
+  const H = top + rowsPer.reduce((acc, n) => acc + n * 78, 0) + STACK.length * 14 + 20;
+  const toolCount = STACK.reduce((acc, [, items]) => acc + items.length, 0);
+  let s = frame(t, W, H, ["Toolbox", "Languages & stack", `${toolCount} tools`]);
 
-  // donut of languages
-  const cx = 190, cy = 232, R = 78, SW = 24, C = 2 * Math.PI * R;
-  s += sectionTitle(t, 40, 100, "Languages");
+  // languages: donut + legend
+  const cx = 130, cy = 180, R = 64, SW = 20, C = 2 * Math.PI * R;
   s += `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="${t.track}" stroke-width="${SW}"/>`;
   let acc = 0;
   langRows.forEach(([lname, size], i) => {
@@ -558,32 +574,41 @@ async function toolbox(name) {
     acc += frac;
   });
   const [topName, topSize] = langRows[0];
-  s += `<text x="${cx}" y="${cy - 2}" text-anchor="middle" font-size="30" font-weight="800" fill="${t.text}">${Math.round(pct(topSize, langTotal))}%</text>`;
-  s += `<text x="${cx}" y="${cy + 20}" text-anchor="middle" font-size="13" fill="${t.muted}">${esc(topName)}</text>`;
+  s += `<text x="${cx}" y="${cy + 2}" text-anchor="middle" font-size="26" font-weight="800" fill="${t.text}">${Math.round(pct(topSize, langTotal))}%</text>`;
+  s += `<text x="${cx}" y="${cy + 21}" text-anchor="middle" font-size="12" fill="${t.muted}">${esc(topName)}</text>`;
+  s += sectionTitle(t, 250, 112, "Languages");
   langRows.forEach(([lname, size], i) => {
-    const x = 40 + (i % 2) * 150, y = 356 + Math.floor(i / 2) * 26;
-    s += `<g class="fade" ${delay(0.4 + i * 0.06)}><rect x="${x}" y="${y - 10}" width="10" height="10" rx="2" fill="${lname === "Other" ? t.gray : t.ramp[i]}"/><text x="${x + 18}" y="${y}" font-size="13" fill="${t.text}">${esc(lname)} <tspan fill="${t.muted}">${pctStr(pct(size, langTotal))}</tspan></text></g>`;
+    const y = 144 + i * 26;
+    s += `<g class="fade" ${delay(0.4 + i * 0.06)}><rect x="250" y="${y - 10}" width="10" height="10" rx="2" fill="${lname === "Other" ? t.gray : t.ramp[i]}"/><text x="268" y="${y}" font-size="14" fill="${t.text}">${esc(lname)}</text><text x="420" y="${y}" text-anchor="end" font-size="14" font-weight="600" fill="${t.muted}">${pctStr(pct(size, langTotal))}</text></g>`;
   });
-  s += `<text x="40" y="${H - 22}" font-size="11" fill="${t.faint}">by bytes · notebooks &amp; markup excluded</text>`;
-  s += `<line x1="360" y1="84" x2="360" y2="${H - 28}" stroke="${t.border}"/>`;
+  s += `<text x="250" y="${144 + langRows.length * 26 + 4}" font-size="11" fill="${t.faint}">by bytes · notebooks &amp; markup excluded</text>`;
+  // headline numbers
+  [[String(toolCount), "tools I've shipped with"], [String(user.repositories.totalCount), "public repos"], [String(STACK.length), "areas, end to end"]].forEach(([v, k], i) => {
+    const x = 520 + i * 140;
+    s += `<g class="fade" ${delay(0.3 + i * 0.1)}><text x="${x}" y="178" font-size="36" font-weight="800" fill="${t.text}" letter-spacing="-1">${v}</text><text x="${x}" y="202" font-size="13" fill="${t.muted}">${k}</text></g>`;
+  });
+  s += `<line x1="40" y1="${top - 30}" x2="${W - 40}" y2="${top - 30}" stroke="${t.border}"/>`;
 
   // icon grid
-  const gx = 396, step = 76, tileS = 52;
+  let y0 = top;
   for (let g = 0; g < STACK.length; g++) {
     const [label, items] = STACK[g];
-    const gy = 100 + g * 118;
-    s += `<text x="${gx}" y="${gy}" font-size="12" font-weight="600" letter-spacing="1" fill="${t.muted}">${esc(label.toUpperCase())}</text>`;
+    s += `<text x="40" y="${y0 + 28}" font-size="12" font-weight="700" letter-spacing="1" fill="${t.o1}">${esc(label.toUpperCase())}</text>`;
+    s += `<text x="40" y="${y0 + 46}" font-size="12" fill="${t.faint}">${items.length} tools</text>`;
     for (let j = 0; j < items.length; j++) {
       const [tool, slug] = items[j];
-      const x = gx + j * step, y = gy + 14;
+      const x = gx + (j % perRow) * step, y = y0 + Math.floor(j / perRow) * 78;
       const img = await icon(slug, t.o1);
-      s += `<g class="pop" ${delay(0.3 + g * 0.2 + j * 0.05)}>`;
-      s += `<rect x="${x}" y="${y}" width="${tileS}" height="${tileS}" rx="14" fill="${t.pill}" stroke="${t.border}"/>`;
+      s += `<g class="pop" ${delay(0.3 + g * 0.15 + j * 0.03)}>`;
+      s += `<rect x="${x + (step - tileS) / 2 - 7}" y="${y}" width="${tileS}" height="${tileS}" rx="13" fill="${t.pill}" stroke="${t.border}"/>`;
+      const ix = x + (step - tileS) / 2 - 7;
       s += img
-        ? `<image href="${img}" x="${x + 13}" y="${y + 13}" width="26" height="26"/>`
-        : `<text x="${x + tileS / 2}" y="${y + 34}" text-anchor="middle" font-size="22" font-weight="800" fill="${t.o1}">${esc(tool[0])}</text>`;
-      s += `<text x="${x + tileS / 2}" y="${y + tileS + 18}" text-anchor="middle" font-size="11.5" fill="${t.text}">${esc(tool)}</text></g>`;
+        ? `<image href="${img}" x="${ix + 12}" y="${y + 12}" width="22" height="22"/>`
+        : `<text x="${ix + tileS / 2}" y="${y + 30}" text-anchor="middle" font-size="${tool.length > 4 ? 16 : 14}" font-weight="800" fill="${t.o1}">${esc(tool.length <= 4 ? tool : tool[0])}</text>`;
+      s += `<text x="${ix + tileS / 2}" y="${y + tileS + 16}" text-anchor="middle" font-size="11" fill="${t.text}">${esc(tool)}</text></g>`;
     }
+    y0 += rowsPer[g] * 78 + 14;
+    if (g < STACK.length - 1) s += `<line x1="40" y1="${y0 - 7}" x2="${W - 40}" y2="${y0 - 7}" stroke="${t.grid}"/>`;
   }
   s += `</svg>
 `;
@@ -593,6 +618,6 @@ async function toolbox(name) {
 mkdirSync("assets", { recursive: true });
 for (const th of ["dark", "light"]) {
   activity(th); oss(th); arcade(th); await toolbox(th);
-  for (const p of PROJECTS) projectTile(p, th);
+  for (const m of MATH) mathTile(m, th);
 }
 console.log(`built cards · ${recentTotal} contributions (90d), ${yearTotal} (year), ${ext.length} OSS PRs`);
