@@ -22,18 +22,33 @@
 
 ```python
 class Aafi(Engineer):
-    based_in   = "Ahmedabad, India 🇮🇳"
-    builds     = ["AI agents", "RAG pipelines", "speech & voice apps", "the UI around them"]
-    side_quests = {
-        "rl":   "small models that play Wordle, Atari, Snake & Flappy Bird",
-        "math": "Lean 4 proofs on open problems (Erdős #385, Fink's conjecture...)",
-    }
-    believes   = "if it isn't evaluated, it doesn't work yet"
-    status     = "open to full-time AI engineering roles ✅"
+    home    = "Ahmedabad, India 🇮🇳"
+    builds  = ["AI agents", "RAG", "speech apps", "the UI around them"]
+    hobbies = ["RL bots that play games", "Lean 4 proofs on Erdős problems"]
+    motto   = "if it isn't evaluated, it doesn't work yet"
+    status  = "open to full-time AI roles ✅"
 
     def ping(self):
-        return "aafimalek2023@gmail.com"  # yes, it actually works
+        return "aafimalek2023@gmail.com"  # yes, it works
 ```
+
+## 📈 What I've been up to
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/activity-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/activity-light.svg">
+  <img src="assets/activity-dark.svg" alt="Activity dashboard: contributions over the last 90 days, split into commits, pull requests, issues and private work, with a daily area chart and totals" width="100%">
+</picture>
+
+## 🤝 Open source
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/oss-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/oss-light.svg">
+  <img src="assets/oss-dark.svg" alt="Open-source pull requests: total, merged and in review, with a breakdown by repository" width="100%">
+</picture>
+
+<p align="center"><sub>Shipping fixes and features to OpenEnv, Unsloth, browser-use, OpenCode, mcp-use, Langfuse and more · <a href="https://github.com/pulls?q=is%3Apr+author%3AAafimalek+-user%3AAafimalek">browse every PR →</a></sub></p>
 
 ## 🧮 Side quest: proving things
 
@@ -75,41 +90,25 @@ Where it all started: a snake that learned not to bite itself and a bird that le
 
 ## 🛠️ Things I've built
 
-| | Project | What it does |
-|---|---|---|
-| 🎬 | [prompt_to_animate](https://github.com/Aafimalek/prompt_to_animate) | Type a prompt, get a high-quality 2D animation in seconds |
-| 🕸️ | [graphdb](https://github.com/Aafimalek/graphdb) | Talk to a Neo4j graph in plain English (text → Cypher) |
-| 📊 | [csv_chat](https://github.com/Aafimalek/csv_chat) | Chat with your CSVs instead of writing pandas |
-| 💬 | [t3_chat](https://github.com/Aafimalek/t3_chat) | A T3.chat-style AI chat: LangGraph, web search, multiple models |
-| 📚 | [advanced_rag](https://github.com/Aafimalek/advanced_rag) | Retrieval experiments beyond "chunk it and pray" |
-| 🧠 | [learning](https://github.com/Aafimalek/learning) | My public logbook of everything I'm learning |
-
-## 🤝 Open-source PRs
-
 <table>
 <tr>
-<td align="center" width="25%"><a href="https://github.com/unslothai/unsloth"><img src="https://avatars.githubusercontent.com/u/150920049?v=4" width="44" alt="Unsloth"><br><b>Unsloth</b></a><br><sub><a href="https://github.com/unslothai/unsloth/pull/16078">audio recording</a> · <a href="https://github.com/unslothai/unsloth/pull/16462">image timing</a></sub></td>
-<td align="center" width="25%"><a href="https://github.com/browser-use/browser-use"><img src="https://avatars.githubusercontent.com/u/192012301?v=4" width="44" alt="browser-use"><br><b>browser-use</b></a><br><sub><a href="https://github.com/browser-use/browser-use/pull/6243">download lifecycle</a> · <a href="https://github.com/browser-use/browser-use/pull/6282">testing docs</a></sub></td>
-<td align="center" width="25%"><a href="https://github.com/mcp-use/mcp-use"><img src="https://avatars.githubusercontent.com/u/207005519?v=4" width="44" alt="mcp-use"><br><b>mcp-use</b></a><br><sub><a href="https://github.com/mcp-use/mcp-use/pull/3000">elicitation defaults</a></sub></td>
-<td align="center" width="25%"><a href="https://github.com/anomalyco/opencode"><img src="https://avatars.githubusercontent.com/u/66570915?v=4" width="44" alt="OpenCode"><br><b>OpenCode</b></a><br><sub><a href="https://github.com/anomalyco/opencode/pull/59851">integration activation</a></sub></td>
+<td width="33%" valign="top"><b>🎬 <a href="https://github.com/Aafimalek/prompt_to_animate">prompt_to_animate</a></b><br>Type a prompt, get a polished 2D animation in seconds.</td>
+<td width="33%" valign="top"><b>🕸️ <a href="https://github.com/Aafimalek/graphdb">graphdb</a></b><br>Talk to a Neo4j graph in plain English (text → Cypher).</td>
+<td width="33%" valign="top"><b>📊 <a href="https://github.com/Aafimalek/csv_chat">csv_chat</a></b><br>Chat with your CSVs instead of writing pandas.</td>
+</tr>
+<tr>
+<td width="33%" valign="top"><b>💬 <a href="https://github.com/Aafimalek/t3_chat">t3_chat</a></b><br>T3.chat-style AI chat with LangGraph, web search and many models.</td>
+<td width="33%" valign="top"><b>📚 <a href="https://github.com/Aafimalek/advanced_rag">advanced_rag</a></b><br>Retrieval experiments beyond “chunk it and pray”.</td>
+<td width="33%" valign="top"><b>🧠 <a href="https://github.com/Aafimalek/learning">learning</a></b><br>My public logbook of everything I'm learning.</td>
 </tr>
 </table>
 
-<p align="center"><a href="https://github.com/pulls?q=is%3Apr+author%3AAafimalek">see all my pull requests →</a></p>
-
 ## 🧰 Toolbox
 
-<p align="center">
-  <img src="https://skillicons.dev/icons?i=python,pytorch,ts,react,nextjs,fastapi,postgres,redis,docker,git,githubactions&perline=11" alt="Python, PyTorch, TypeScript, React, Next.js, FastAPI, PostgreSQL, Redis, Docker, Git, GitHub Actions">
-</p>
-<p align="center"><sub>+ LangGraph · LangChain · MCP · Neo4j · Qdrant · Lean 4 · whatever the problem needs</sub></p>
-
-## 🐍 My contributions, being eaten
-
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Aafimalek/Aafimalek/output/github-contribution-grid-snake-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Aafimalek/Aafimalek/output/github-contribution-grid-snake.svg">
-  <img alt="Snake eating my GitHub contribution graph" src="https://raw.githubusercontent.com/Aafimalek/Aafimalek/output/github-contribution-grid-snake.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="assets/toolbox-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/toolbox-light.svg">
+  <img src="assets/toolbox-dark.svg" alt="Toolbox: code by language across my repos, plus the AI, product and infrastructure tools I use" width="100%">
 </picture>
 
 <details>
