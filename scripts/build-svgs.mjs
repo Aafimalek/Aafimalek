@@ -10,11 +10,11 @@ const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, 
 const themes = {
   dark: {
     bg: "#0d1117", bar: "#161b22", border: "#30363d", text: "#c9d1d9",
-    dim: "#484f58", key: "#ff8a3d", accent: "#58a6ff", ok: "#3fb950", robot: "#8b949e",
+    dim: "#484f58", key: "#ff8a3d", accent: "#ffc08a", ok: "#3fb950", robot: "#8b949e",
   },
   light: {
     bg: "#ffffff", bar: "#f6f8fa", border: "#d0d7de", text: "#24292f",
-    dim: "#afb8c1", key: "#d4590f", accent: "#0969da", ok: "#1a7f37", robot: "#57606a",
+    dim: "#afb8c1", key: "#d4590f", accent: "#b3400e", ok: "#1a7f37", robot: "#57606a",
   },
 };
 
@@ -31,23 +31,14 @@ const info = [
   kv("Uptime", "on GitHub since Sep 2021"),
   kv("Host", "AI / ML Engineer"),
   kv("Kernel", "agents · retrieval · speech"),
-  kv("Shell", "Python · TypeScript · Lean 4"),
-  kv("Packages", "PyTorch, LangGraph, FastAPI"),
+  kv("Resolution", "evals before vibes"),
   kv("IDE", "whichever one ships it"),
-  { blank: true },
-  kv("Hobbies.RL", "bots that play Wordle, Atari"),
-  kv("Hobbies.Math", "Lean 4 proofs on Erdős problems"),
+  kv("Theme", "orange on dark, obviously"),
   kv("Status", "open to full-time roles ✓"),
-  { blank: true },
-  { section: "Contact" },
-  kv("Email", "aafimalek2023@gmail.com"),
-  kv("LinkedIn", "in/aafi-malek"),
-  kv("X", "@aafimalek2032"),
-  kv("Medium", "@Aafimalek"),
-  { blank: true },
   { palette: true },
 ];
 
+// (info is padded below once robot is known)
 // every line is exactly 24 columns; BUBBLE / EYES / CHEST are drawn specially
 const robot = [
   "  .------------------.  ",
@@ -68,6 +59,7 @@ const robot = [
   "    (____)    (____)    ",
 ];
 for (const l of robot) if (l.length !== 24 && !/^[A-Z]+$/.test(l)) throw new Error(`robot line not 24 wide: "${l}"`);
+while (info.length < 17) info.splice(info.length - 1, 0, { blank: true });
 const bubbleMsgs = ["beep boop!", "hire aafi :)", "proofs > vibes", "ship > talk"];
 
 function terminal(name) {
@@ -143,7 +135,7 @@ function terminal(name) {
     else if (row.rule) out += `${open}<tspan class="d">${"─".repeat(W)}</tspan></text>\n`;
     else if (row.section) out += `${open}<tspan class="d">── </tspan><tspan class="a">${row.section}</tspan><tspan class="d"> ${"─".repeat(W - row.section.length - 4)}</tspan></text>\n`;
     else if (row.palette) {
-      const cols = ["#0d1117", "#ff5f57", "#3fb950", "#febc2e", "#2f6bff", "#bc8cff", "#39c5cf", "#e6edf3"];
+      const cols = ["#3a1a08", "#6b2a0c", "#9a3412", "#c2410c", "#f26a1b", "#ff8a3d", "#ffc08a", "#ffe4cc"];
       out += `<g class="l" style="animation-delay:${d}s">` +
         cols.map((c, j) => `<rect x="${xR + j * 30}" y="${y - 14}" width="26" height="18" rx="3" fill="${c}" stroke="${t.border}"/>`).join("") +
         `</g>\n`;
@@ -161,74 +153,4 @@ function terminal(name) {
 terminal("dark");
 terminal("light");
 
-// ---------------------------------------------------------------- wordle
-const answer = "AGENT";
-const guesses = ["CRANE", "AMEND", "AGENT"];
-
-function score(guess) {
-  const res = Array(5).fill("x");
-  const pool = {};
-  for (let i = 0; i < 5; i++) {
-    if (guess[i] === answer[i]) res[i] = "g";
-    else pool[answer[i]] = (pool[answer[i]] || 0) + 1;
-  }
-  for (let i = 0; i < 5; i++) {
-    if (res[i] === "g") continue;
-    if (pool[guess[i]]) { res[i] = "y"; pool[guess[i]]--; }
-  }
-  return res;
-}
-
-function wordle() {
-  const tile = 58, gap = 8, cols = 5, rowsN = 6;
-  const boardW = cols * tile + (cols - 1) * gap;
-  const width = 420, height = 560;
-  const ox = (width - boardW) / 2, oy = 92;
-  const fill = { g: "#3fb950", y: "#d29922", x: "#3a3f47" };
-  const rowStart = (r) => 0.8 + r * 2.1;
-
-  let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" font-family="'Segoe UI',Helvetica,Arial,sans-serif">
-<style>
-  .t { transform-box: fill-box; transform-origin: center; animation: flip .5s ease-in-out both; }
-  @keyframes flip { 0% { transform: scaleY(1); } 50% { transform: scaleY(0); } 100% { transform: scaleY(1); } }
-  .ch { opacity: 0; animation: pop .15s ease-out forwards; }
-  @keyframes pop { from { opacity: 0; } to { opacity: 1; } }
-  .win { transform-box: fill-box; transform-origin: center; animation: hop .4s ease-out both; }
-  @keyframes hop { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
-  .fin { opacity: 0; animation: pop .4s ease-out forwards; }
-  ${Object.entries(fill).map(([k, c]) => `.p${k} { animation: p${k} .01s linear both; } @keyframes p${k} { from { fill: transparent; stroke: #565f6b; } to { fill: ${c}; stroke: ${c}; } }`).join("\n  ")}
-</style>
-<rect width="${width}" height="${height}" rx="14" fill="#0d1117" stroke="#30363d"/>
-<text x="${width / 2}" y="44" text-anchor="middle" font-size="26" font-weight="800" letter-spacing="6" fill="#e6edf3">WORDLE</text>
-<text x="${width / 2}" y="68" text-anchor="middle" font-size="13" fill="#8b949e">target: the thing I like building most</text>
-`;
-
-  for (let r = 0; r < rowsN; r++) {
-    const g = guesses[r];
-    const sc = g ? score(g) : null;
-    const win = g === answer;
-    for (let c = 0; c < cols; c++) {
-      const x = ox + c * (tile + gap), y = oy + r * (tile + gap);
-      if (!g) {
-        s += `<rect x="${x}" y="${y}" width="${tile}" height="${tile}" rx="4" fill="none" stroke="#30363d" stroke-width="2"/>\n`;
-        continue;
-      }
-      const typeAt = rowStart(r) - 0.7 + c * 0.12;
-      const flipAt = rowStart(r) + c * 0.28;
-      const paintAt = flipAt + 0.25;
-      const hopAt = rowStart(r) + 5 * 0.28 + 0.4 + c * 0.1;
-      s += `<g${win ? ` class="win" style="animation-delay:${hopAt.toFixed(2)}s"` : ""}><g class="t" style="animation-delay:${flipAt.toFixed(2)}s">` +
-        `<rect class="p${sc[c]}" style="animation-delay:${paintAt.toFixed(2)}s" x="${x}" y="${y}" width="${tile}" height="${tile}" rx="4" stroke-width="2"/>` +
-        `<text class="ch" style="animation-delay:${typeAt.toFixed(2)}s" x="${x + tile / 2}" y="${y + tile / 2 + 11}" text-anchor="middle" font-size="31" font-weight="800" fill="#ffffff">${g[c]}</text>` +
-        `</g></g>\n`;
-    }
-  }
-  const end = rowStart(guesses.length - 1) + 2.2;
-  s += `<text class="fin" style="animation-delay:${end.toFixed(2)}s" x="${width / 2}" y="${oy + 6 * (tile + gap) + 26}" text-anchor="middle" font-size="16" font-weight="700" fill="#3fb950">solved in 3/6 · it's agents, obviously</text>\n`;
-  s += `<text x="${width / 2}" y="${height - 16}" text-anchor="middle" font-size="11" fill="#6e7681">a scripted replay · the real RL agent lives in wordle-rl</text>\n`;
-  s += `</svg>\n`;
-  writeFileSync("assets/wordle.svg", s);
-}
-
-wordle();
-console.log("built assets/terminal-dark.svg, assets/terminal-light.svg, assets/wordle.svg");
+console.log("built assets/terminal-dark.svg, assets/terminal-light.svg");

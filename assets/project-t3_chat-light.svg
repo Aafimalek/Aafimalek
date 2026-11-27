@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="460" height="190" viewBox="0 0 460 190" font-family="'Inter','Segoe UI',-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif">
+<style>
+  .fade { opacity: 0; animation: fade .6s ease-out forwards; }
+  @keyframes fade { to { opacity: 1; } }
+  .draw { stroke-dasharray: 2400; stroke-dashoffset: 2400; animation: draw 1.8s ease-out forwards; }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  .grow { transform-box: fill-box; transform-origin: left center; transform: scaleX(0); animation: grow .9s cubic-bezier(.2,.8,.2,1) forwards; }
+  @keyframes grow { to { transform: scaleX(1); } }
+  .pop { transform-box: fill-box; transform-origin: center; opacity: 0; animation: popin .35s ease-out forwards; }
+  @keyframes popin { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
+</style>
+<rect x="1" y="1" width="458" height="188" rx="14" fill="#ffffff" stroke="#e3e0e6"/>
+<rect x="24" y="24" width="36" height="36" rx="9" fill="#f26a1b"/>
+<text x="42" y="49" text-anchor="middle" font-size="18" font-weight="800" fill="#ffffff">T</text>
+<text x="74" y="40" font-size="18" font-weight="700" fill="#1d1b20">t3_chat</text>
+<text x="74" y="58" font-size="12" fill="#65616a">Aafimalek/t3_chat</text>
+<text x="24" y="92" font-size="14" fill="#1d1b20" fill-opacity=".86">A T3.chat-style AI chat app with LangGraph agents, web</text><text x="24" y="112" font-size="14" fill="#1d1b20" fill-opacity=".86">search and several models behind one UI.</text><line x1="24" y1="146" x2="436" y2="146" stroke="#eeebf0"/><circle cx="29" cy="169" r="5" fill="#f26a1b"/><text x="40" y="173" font-size="12" fill="#65616a">Python</text><text x="96.16" y="173" font-size="12" fill="#65616a">★ 2</text><text x="436" y="173" text-anchor="end" font-size="12" fill="#9c98a1">updated Mar 2026</text></svg>

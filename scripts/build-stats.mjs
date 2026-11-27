@@ -1,6 +1,7 @@
-// Builds the dashboard-style stat cards from live GitHub data.
+// Builds the dashboard-style cards in assets/ from live GitHub data.
 // Run from the repo root: node scripts/build-stats.mjs
 // Uses $GITHUB_TOKEN (set in Actions) or falls back to `gh auth token` locally.
+// Only public data is shown; private work appears as one aggregate count.
 import { writeFileSync, mkdirSync } from "node:fs";
 import { execSync } from "node:child_process";
 
@@ -19,6 +20,32 @@ async function gql(query, variables = {}) {
   return json.data;
 }
 
+// ------------------------------------------------------------------ content you may want to edit
+const PROJECTS = [
+  { repo: "prompt_to_animate", title: "Manimancer", live: "manimancer.fun",
+    desc: "Plain-English prompt in, rendered Manim animation out. Next.js front end, FastAPI and Redis render workers." },
+  { repo: "csv_chat", title: "QueryCSV",
+    desc: "Privacy-first CSV analysis. Your data stays in the browser (Pyodide); only the schema reaches the LLM." },
+  { repo: "graphdb", title: "Graph Q&A",
+    desc: "Ask a Neo4j graph questions in plain English, then see the generated Cypher and the graph it returns." },
+  { repo: "t3_chat", title: "t3_chat",
+    desc: "A T3.chat-style AI chat app with LangGraph agents, web search and several models behind one UI." },
+  { repo: "advanced_rag", title: "DocChat AI",
+    desc: "Upload documents and chat with them. A RAG app with FastAPI, ChromaDB retrieval and a React front end." },
+  { repo: "learning", title: "learning",
+    desc: "My public logbook: notes and notebooks on everything I'm learning, kept so future me can find them." },
+];
+const GAMES = [
+  { repo: "atari_rl", name: "atari_rl", tag: "DQN", desc: "Learned Atari Breakout from pixels over 6M steps" },
+  { repo: "rl_snake_game", name: "rl_snake_game", tag: "DQN", desc: "A snake that learned not to bite itself" },
+  { repo: "flappy_bird_AI", name: "flappy_bird_AI", tag: "NEAT", desc: "Evolved a bird that finally gets gravity" },
+];
+const STACK = [
+  ["AI / ML", ["PyTorch", "Transformers", "Unsloth", "LangGraph", "LangChain", "MCP"]],
+  ["Product", ["FastAPI", "Next.js", "React", "Pyodide"]],
+  ["Data / infra", ["PostgreSQL", "Neo4j", "Qdrant", "Redis", "MongoDB", "Docker", "GitHub Actions"]],
+];
+
 // ------------------------------------------------------------------ data
 const now = new Date();
 const dayKey = (d) => d.toISOString().slice(0, 10);
@@ -26,27 +53,33 @@ const daysAgo = (n) => new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth()
 const from90 = daysAgo(DAYS - 1);
 const from365 = daysAgo(364);
 
+const repoFields = PROJECTS.concat(GAMES, [{ repo: "wordle-rl" }])
+  .map((p, i) => `r${i}: repository(owner:"${LOGIN}", name:"${p.repo}") { name stargazerCount pushedAt primaryLanguage { name } }`)
+  .join("\n");
+
 const base = await gql(
   `query($login:String!, $from90:DateTime!, $from365:DateTime!, $to:DateTime!) {
     user(login:$login) {
       recent: contributionsCollection(from:$from90, to:$to) {
-        totalCommitContributions totalPullRequestContributions totalIssueContributions
-        totalPullRequestReviewContributions restrictedContributionsCount totalRepositoriesWithContributedCommits
+        totalCommitContributions totalIssueContributions totalPullRequestReviewContributions
+        restrictedContributionsCount totalRepositoriesWithContributedCommits
         contributionCalendar { totalContributions weeks { contributionDays { date contributionCount } } }
       }
       year: contributionsCollection(from:$from365, to:$to) {
-        contributionCalendar { totalContributions weeks { contributionDays { date contributionCount } } }
+        contributionCalendar { totalContributions weeks { contributionDays { date contributionCount weekday } } }
       }
-      merged: pullRequests(states:MERGED) { totalCount }
-      repositories(ownerAffiliations:OWNER, isFork:false, first:100) {
+      repositories(ownerAffiliations:OWNER, isFork:false, privacy:PUBLIC, first:100) {
         totalCount
-        nodes { stargazerCount languages(first:10, orderBy:{field:SIZE, direction:DESC}) { edges { size node { name color } } } }
+        nodes { languages(first:10, orderBy:{field:SIZE, direction:DESC}) { edges { size node { name } } } }
       }
     }
+    ${repoFields}
   }`,
   { login: LOGIN, from90: from90.toISOString(), from365: from365.toISOString(), to: now.toISOString() },
 );
 const user = base.user;
+const repoInfo = {};
+for (const [k, v] of Object.entries(base)) if (k.startsWith("r") && v) repoInfo[v.name] = v;
 
 const prs = [];
 for (let cursor = null; ;) {
@@ -63,7 +96,7 @@ for (let cursor = null; ;) {
   cursor = page.pageInfo.endCursor;
 }
 
-// daily series for the last 90 days
+// 90-day daily series
 const dates = Array.from({ length: DAYS }, (_, i) => dayKey(daysAgo(DAYS - 1 - i)));
 const idx = Object.fromEntries(dates.map((d, i) => [d, i]));
 const total = Array(DAYS).fill(0), opened = Array(DAYS).fill(0), mergedS = Array(DAYS).fill(0);
@@ -74,43 +107,55 @@ for (const p of prs) {
   if (c in idx) opened[idx[c]]++;
   if (m && m in idx) mergedS[idx[m]]++;
 }
-
-// streaks over the last year
-const yearDays = user.year.contributionCalendar.weeks.flatMap((w) => w.contributionDays);
-let longest = 0, run = 0;
-for (const d of yearDays) { run = d.contributionCount ? run + 1 : 0; longest = Math.max(longest, run); }
-
 const r = user.recent;
 const recentTotal = r.contributionCalendar.totalContributions;
 const prs90 = opened.reduce((a, b) => a + b, 0);
 const merged90 = mergedS.reduce((a, b) => a + b, 0);
+
+// past-year calendar stats
+const yearWeeks = user.year.contributionCalendar.weeks;
+const yearDays = yearWeeks.flatMap((w) => w.contributionDays);
+const yearTotal = user.year.contributionCalendar.totalContributions;
+let longest = 0, run = 0;
+for (const d of yearDays) { run = d.contributionCount ? run + 1 : 0; longest = Math.max(longest, run); }
+let current = 0;
+for (let i = yearDays.length - 1; i >= 0; i--) {
+  if (yearDays[i].contributionCount) current++;
+  else if (i === yearDays.length - 1) continue; // today can still be empty
+  else break;
+}
+const activeDays = yearDays.filter((d) => d.contributionCount).length;
+const best = yearDays.reduce((a, d) => (d.contributionCount > a.contributionCount ? d : a), yearDays[0]);
+const byWeekday = Array(7).fill(0);
+for (const d of yearDays) byWeekday[d.weekday] += d.contributionCount;
+const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const topWeekday = WEEKDAYS[byWeekday.indexOf(Math.max(...byWeekday))];
+
+// open source
 const ext = prs.filter((p) => p.repository.owner.login !== LOGIN);
 const extRepos = {};
 for (const p of ext) {
   const k = p.repository.nameWithOwner;
-  extRepos[k] ??= { name: k, owner: p.repository.owner, stars: p.repository.stargazerCount, n: 0, merged: 0, open: 0, adds: 0 };
-  const e = extRepos[k];
-  e.n++; if (p.mergedAt) e.merged++; if (p.state === "OPEN") e.open++; e.adds += p.additions;
+  extRepos[k] ??= { name: k, owner: p.repository.owner, stars: p.repository.stargazerCount, n: 0, merged: 0 };
+  extRepos[k].n++;
+  if (p.mergedAt) extRepos[k].merged++;
 }
 const repoList = Object.values(extRepos).sort((a, b) => b.n - a.n || b.stars - a.stars);
 const combinedStars = repoList.reduce((a, e) => a + e.stars, 0);
-const mergedAll = prs.filter((p) => p.mergedAt).length;
 const extMerged = ext.filter((p) => p.mergedAt).length;
 const extOpen = ext.filter((p) => p.state === "OPEN").length;
+const extAdds = ext.reduce((a, p) => a + p.additions, 0);
 
+// languages (notebook outputs and markup inflate byte counts, so they're left out)
+const SKIP_LANGS = new Set(["Jupyter Notebook", "HTML", "CSS", "TeX", "SCSS", "Dockerfile", "Makefile", "Shell", "PowerShell", "Batchfile"]);
 const langs = {};
-let ownStars = 0;
-for (const repo of user.repositories.nodes) {
-  ownStars += repo.stargazerCount;
-  for (const e of repo.languages.edges) {
-    langs[e.node.name] ??= { name: e.node.name, size: 0, color: e.node.color || "#8b8b8b" };
-    langs[e.node.name].size += e.size;
-  }
-}
-const langTotal = Object.values(langs).reduce((a, l) => a + l.size, 0);
-const langTop = Object.values(langs).sort((a, b) => b.size - a.size).slice(0, 7);
-const otherSize = langTotal - langTop.reduce((a, l) => a + l.size, 0);
-const langRows = [...langTop, { name: "Other", size: otherSize, color: "#6e6a73" }];
+for (const repo of user.repositories.nodes)
+  for (const e of repo.languages.edges)
+    if (!SKIP_LANGS.has(e.node.name)) langs[e.node.name] = (langs[e.node.name] || 0) + e.size;
+const langTotal = Object.values(langs).reduce((a, b) => a + b, 0);
+const langTop = Object.entries(langs).sort((x, y) => y[1] - x[1]).filter(([, v]) => v / langTotal >= 0.005).slice(0, 7);
+const otherSize = langTotal - langTop.reduce((acc, l) => acc + l[1], 0);
+const langRows = otherSize / langTotal >= 0.001 ? [...langTop, ["Other", otherSize]] : langTop;
 
 const avatars = {};
 for (const e of repoList.slice(0, 8)) {
@@ -119,17 +164,21 @@ for (const e of repoList.slice(0, 8)) {
   avatars[e.name] = `data:image/png;base64,${buf.toString("base64")}`;
 }
 
-// ------------------------------------------------------------------ helpers
+// ------------------------------------------------------------------ theme + helpers
 const themes = {
   dark: {
-    bg: "#1d1b20", card: "#232026", border: "#353139", text: "#f3f1f4", muted: "#a19da6", faint: "#6e6a73",
-    grid: "#333037", main: "#f3f1f4", mainFill: "#f3f1f4", accent: "#d97757", blue: "#5aa9e6", pill: "#2c2930", pillOn: "#3a363e",
-    track: "#3a363e",
+    bg: "#1d1b20", border: "#353139", text: "#f3f1f4", muted: "#a19da6", faint: "#6e6a73", grid: "#312e35",
+    o1: "#ff8a3d", o2: "#ffc08a", o3: "#c2410c", gray: "#6e6a73", pill: "#2a272e", pillOn: "#3a363e", track: "#34303a",
+    heat: ["#2c2930", "#5c2b12", "#9c4216", "#e0661f", "#ff9d52"],
+    ramp: ["#ff8a3d", "#f2701f", "#ffa868", "#c2410c", "#ffc08a", "#9a3412", "#ffd9b8", "#6e6a73"],
+    tile: "#232026", tileEmpty: "#2a272e", tileEdge: "#3e3a43",
   },
   light: {
-    bg: "#ffffff", card: "#f7f6f8", border: "#e3e0e6", text: "#1d1b20", muted: "#65616a", faint: "#9c98a1",
-    grid: "#ebe8ee", main: "#2a272d", mainFill: "#2a272d", accent: "#d0643f", blue: "#2f7fc1", pill: "#f1eff3", pillOn: "#ffffff",
-    track: "#e8e5eb",
+    bg: "#ffffff", border: "#e3e0e6", text: "#1d1b20", muted: "#65616a", faint: "#9c98a1", grid: "#eeebf0",
+    o1: "#f26a1b", o2: "#f8a55f", o3: "#b3400e", gray: "#b4b0b8", pill: "#f4f2f6", pillOn: "#ffffff", track: "#ece9ef",
+    heat: ["#efedf1", "#ffd9b8", "#ffab66", "#f26a1b", "#b3400e"],
+    ramp: ["#f26a1b", "#d9560f", "#f8a55f", "#b3400e", "#ffc898", "#8a2f0a", "#ffe1c7", "#b4b0b8"],
+    tile: "#ffffff", tileEmpty: "#ffffff", tileEdge: "#d9d5dd",
   },
 };
 const FONT = `'Inter','Segoe UI',-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif`;
@@ -137,8 +186,21 @@ const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replac
 const fmt = (n) => (n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1) + "M" : n >= 1e3 ? (n / 1e3).toFixed(n >= 1e4 ? 0 : 1) + "k" : String(n));
 const pct = (a, b) => (b ? (a / b) * 100 : 0);
 const pctStr = (p) => (p > 0 && p < 0.1 ? "<0.1%" : p.toFixed(1) + "%");
-const textW = (s, size) => s.length * size * 0.53; // rough sans-serif width
-const month = (d) => new Date(d + "T00:00:00Z").toLocaleString("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).toUpperCase();
+const textW = (s, size) => s.length * size * 0.53;
+const mon = (d) => new Date(d + "T00:00:00Z").toLocaleString("en-US", { month: "short", timeZone: "UTC" });
+const monDay = (d) => new Date(d + "T00:00:00Z").toLocaleString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+const delay = (s) => `style="animation-delay:${s.toFixed(2)}s"`;
+
+function wrap(text, max) {
+  const out = [];
+  let line = "";
+  for (const w of text.split(" ")) {
+    if ((line + " " + w).trim().length > max) { out.push(line.trim()); line = w; }
+    else line += " " + w;
+  }
+  if (line.trim()) out.push(line.trim());
+  return out;
+}
 
 function smooth(arr, radius = 2) {
   return arr.map((_, i) => {
@@ -153,7 +215,6 @@ function smooth(arr, radius = 2) {
   });
 }
 
-// Catmull-Rom spline through points, control points clamped to the baseline
 function spline(pts, baseY) {
   let d = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
   for (let i = 0; i < pts.length - 1; i++) {
@@ -171,29 +232,32 @@ const niceMax = (v) => {
   return 10 * step;
 };
 
-function frame(t, W, H, crumbs, right) {
-  let s = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="${FONT}">
-<style>
+const STYLE = `<style>
   .fade { opacity: 0; animation: fade .6s ease-out forwards; }
   @keyframes fade { to { opacity: 1; } }
   .draw { stroke-dasharray: 2400; stroke-dashoffset: 2400; animation: draw 1.8s ease-out forwards; }
   @keyframes draw { to { stroke-dashoffset: 0; } }
   .grow { transform-box: fill-box; transform-origin: left center; transform: scaleX(0); animation: grow .9s cubic-bezier(.2,.8,.2,1) forwards; }
   @keyframes grow { to { transform: scaleX(1); } }
-</style>
+  .pop { transform-box: fill-box; transform-origin: center; opacity: 0; animation: popin .35s ease-out forwards; }
+  @keyframes popin { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
+</style>`;
+
+function frame(t, W, H, crumbs, right = []) {
+  let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="${FONT}">
+${STYLE}
 <rect x="1" y="1" width="${W - 2}" height="${H - 2}" rx="16" fill="${t.bg}" stroke="${t.border}"/>
 <line x1="1" y1="60" x2="${W - 1}" y2="60" stroke="${t.border}"/>
 `;
   let x = 28;
   crumbs.forEach((c, i) => {
     if (i) { s += `<text x="${x}" y="37" font-size="16" fill="${t.faint}">/</text>`; x += 20; }
-    s += `<text x="${x}" y="37" font-size="16" font-weight="${i ? 600 : 600}" fill="${i ? t.text : t.muted}">${esc(c)}</text>`;
-    x += textW(c, 16) + 12;
+    s += `<text x="${x}" y="37" font-size="16" font-weight="600" fill="${i ? t.text : t.muted}">${esc(c)}</text>`;
+    x += textW(c, 16) + 14;
   });
-  // right-side pills (labels only)
   let rx = W - 28;
   [...right].reverse().forEach((p) => {
-    const w = textW(p.label, 14) + 26;
+    const w = textW(p.label, 14) + 28;
     rx -= w;
     s += `<rect x="${rx}" y="16" width="${w}" height="30" rx="8" fill="${p.on ? t.pillOn : t.pill}" stroke="${t.border}"/>`;
     s += `<text x="${rx + w / 2}" y="36" text-anchor="middle" font-size="14" font-weight="${p.on ? 600 : 500}" fill="${p.on ? t.text : t.muted}">${esc(p.label)}</text>`;
@@ -202,35 +266,37 @@ function frame(t, W, H, crumbs, right) {
   return s;
 }
 
+const sectionTitle = (t, x, y, label, right) =>
+  `<text x="${x}" y="${y}" font-size="16" font-weight="600" fill="${t.text}">${esc(label)}</text>` +
+  (right ? `<text x="${right.x}" y="${y}" text-anchor="end" font-size="13" fill="${t.muted}">${right.html}</text>` : "");
+
 // ------------------------------------------------------------------ activity card
 function activity(name) {
   const t = themes[name];
-  const W = 960, H = 656;
+  const W = 960, H = 760;
   const updated = now.toLocaleString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
-  let s = frame(t, W, H, ["Activity", "All repos", "Last 90 days"], [{ label: `updated ${updated}`, on: false }, { label: "90 days", on: true }]);
+  let s = frame(t, W, H, ["Activity", "All repos", "Last 90 days"], [{ label: `updated ${updated}` }, { label: "90 days", on: true }]);
 
-  // big number + legend
   s += `<text class="fade" x="40" y="124" font-size="48" font-weight="800" fill="${t.text}" letter-spacing="-1">${recentTotal.toLocaleString("en-US")}</text>`;
   s += `<text class="fade" x="40" y="150" font-size="14" fill="${t.muted}">contributions in the last 90 days</text>`;
   const legend = [
-    { c: t.main, name: "Commits", v: r.totalCommitContributions, sub: `across ${r.totalRepositoriesWithContributedCommits} public repos` },
-    { c: t.accent, name: "Pull requests", v: prs90, sub: `${merged90} merged in this window` },
-    { c: t.blue, name: "Issues & reviews", v: r.totalIssueContributions + r.totalPullRequestReviewContributions, sub: `${r.totalIssueContributions} issues · ${r.totalPullRequestReviewContributions} reviews` },
-    { c: t.faint, name: "Private work", v: r.restrictedContributionsCount, sub: "in private repos" },
+    { c: t.o1, name: "Commits", v: r.totalCommitContributions, sub: `across ${r.totalRepositoriesWithContributedCommits} public repos` },
+    { c: t.o2, name: "Pull requests", v: prs90, sub: `${merged90} merged in this window` },
+    { c: t.o3, name: "Issues & reviews", v: r.totalIssueContributions + r.totalPullRequestReviewContributions, sub: `${r.totalIssueContributions} issues · ${r.totalPullRequestReviewContributions} reviews` },
+    { c: t.gray, name: "Private work", v: r.restrictedContributionsCount, sub: "in private repos" },
   ];
   legend.forEach((l, i) => {
     const y = 196 + i * 56;
-    const d = (0.2 + i * 0.12).toFixed(2);
-    s += `<g class="fade" style="animation-delay:${d}s"><circle cx="45" cy="${y - 5}" r="5" fill="${l.c}"/>
+    s += `<g class="fade" ${delay(0.2 + i * 0.12)}><circle cx="45" cy="${y - 5}" r="5" fill="${l.c}"/>
 <text x="60" y="${y}" font-size="16" font-weight="600" fill="${t.text}">${esc(l.name)} <tspan font-size="13" font-weight="400" fill="${t.muted}">${pctStr(pct(l.v, recentTotal))}</tspan></text>
 <text x="370" y="${y}" text-anchor="end" font-size="18" font-weight="700" fill="${t.text}">${l.v.toLocaleString("en-US")}</text>
 <text x="40" y="${y + 22}" font-size="13" fill="${t.muted}">${esc(l.sub)}</text></g>\n`;
   });
 
-  // chart
+  // area chart
   const px0 = 470, px1 = 920, py0 = 120, py1 = 330;
   s += `<text x="${px0 - 50}" y="96" font-size="16" font-weight="600" fill="${t.text}">Daily contributions</text>`;
-  s += `<g font-size="11" fill="${t.muted}"><circle cx="${px1 - 186}" cy="92" r="4" fill="${t.main}"/><text x="${px1 - 178}" y="96">all</text><circle cx="${px1 - 146}" cy="92" r="4" fill="${t.accent}"/><text x="${px1 - 138}" y="96">PRs opened</text><circle cx="${px1 - 62}" cy="92" r="4" fill="${t.blue}"/><text x="${px1 - 54}" y="96">PRs merged</text></g>`;
+  s += `<g font-size="11" fill="${t.muted}"><circle cx="${px1 - 186}" cy="92" r="4" fill="${t.o1}"/><text x="${px1 - 178}" y="96">all</text><circle cx="${px1 - 146}" cy="92" r="4" fill="${t.o2}"/><text x="${px1 - 138}" y="96">PRs opened</text><circle cx="${px1 - 62}" cy="92" r="4" fill="${t.o3}"/><text x="${px1 - 54}" y="96">PRs merged</text></g>`;
   const sT = smooth(total), sO = smooth(opened), sM = smooth(mergedS);
   const yMax = niceMax(Math.max(...sT, ...sO) * 1.1);
   const X = (i) => px0 + (i / (DAYS - 1)) * (px1 - px0);
@@ -240,54 +306,67 @@ function activity(name) {
     s += `<line x1="${px0}" y1="${y}" x2="${px1}" y2="${y}" stroke="${t.grid}"/>`;
     s += `<text x="${px0 - 12}" y="${y + 4}" text-anchor="end" font-size="11" fill="${t.muted}">${fmt(Math.round(v))}</text>`;
   }
-  const series = [
-    { data: sT, c: t.main, fill: t.mainFill, op: 0.16, w: 2 },
-    { data: sO, c: t.accent, fill: t.accent, op: 0.28, w: 2 },
-    { data: sM, c: t.blue, fill: t.blue, op: 0.18, w: 1.6 },
-  ];
-  series.forEach((se, i) => {
+  s += `<defs><linearGradient id="gA-${name}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${t.o1}" stop-opacity=".55"/><stop offset="1" stop-color="${t.o1}" stop-opacity="0.02"/></linearGradient></defs>`;
+  [
+    { data: sT, c: t.o1, fill: `url(#gA-${name})`, op: 1, w: 2.2 },
+    { data: sO, c: t.o2, fill: t.o2, op: 0.22, w: 1.8 },
+    { data: sM, c: t.o3, fill: t.o3, op: 0.3, w: 1.6 },
+  ].forEach((se, i) => {
     const pts = se.data.map((v, j) => [X(j), Y(v)]);
     const line = spline(pts, py1);
-    s += `<path class="fade" style="animation-delay:${(0.6 + i * 0.2).toFixed(1)}s" d="${line} L${px1},${py1} L${px0},${py1} Z" fill="${se.fill}" fill-opacity="${se.op}"/>`;
-    s += `<path class="draw" style="animation-delay:${(i * 0.2).toFixed(1)}s" d="${line}" fill="none" stroke="${se.c}" stroke-width="${se.w}" stroke-linejoin="round" stroke-linecap="round"/>\n`;
+    s += `<path class="fade" ${delay(0.6 + i * 0.2)} d="${line} L${px1},${py1} L${px0},${py1} Z" fill="${se.fill}" fill-opacity="${se.op}"/>`;
+    s += `<path class="draw" ${delay(i * 0.2)} d="${line}" fill="none" stroke="${se.c}" stroke-width="${se.w}" stroke-linejoin="round" stroke-linecap="round"/>\n`;
   });
   s += `<line x1="${px0}" y1="${py1}" x2="${px1}" y2="${py1}" stroke="${t.faint}"/>`;
   [0, Math.floor((DAYS - 1) / 2), DAYS - 1].forEach((i, k) => {
-    s += `<text x="${X(i)}" y="${py1 + 22}" text-anchor="${["start", "middle", "end"][k]}" font-size="11" font-weight="600" fill="${t.muted}">${month(dates[i])}</text>`;
+    s += `<text x="${X(i)}" y="${py1 + 22}" text-anchor="${["start", "middle", "end"][k]}" font-size="11" font-weight="600" fill="${t.muted}">${monDay(dates[i]).toUpperCase()}</text>`;
   });
 
-  // totals
-  s += `<text x="40" y="432" font-size="16" font-weight="600" fill="${t.text}">Totals</text>`;
+  // contribution heatmap (past year)
+  const hx = 70, hy = 470, cell = 12, gap = 3;
+  s += `<line x1="40" y1="400" x2="${W - 40}" y2="400" stroke="${t.border}"/>`;
+  s += sectionTitle(t, 40, 436, "Contribution graph", { x: W - 40, html: `<tspan font-weight="700" fill="${t.text}">${yearTotal.toLocaleString("en-US")}</tspan> contributions in the past year` });
+  const nonzero = yearDays.map((d) => d.contributionCount).filter(Boolean).sort((a, b) => a - b);
+  const q = (p) => nonzero[Math.min(nonzero.length - 1, Math.floor(p * nonzero.length))] || 1;
+  const cuts = [q(0.25), q(0.5), q(0.75)];
+  const level = (c) => (!c ? 0 : c <= cuts[0] ? 1 : c <= cuts[1] ? 2 : c <= cuts[2] ? 3 : 4);
+  let lastMonth = "";
+  yearWeeks.forEach((w, wi) => {
+    const x = hx + wi * (cell + gap);
+    const first = w.contributionDays[0];
+    const m = mon(first.date);
+    if (m !== lastMonth && wi < yearWeeks.length - 2) {
+      s += `<text x="${x}" y="${hy - 8}" font-size="11" fill="${t.muted}">${m}</text>`;
+      lastMonth = m;
+    }
+    w.contributionDays.forEach((d) => {
+      const y = hy + d.weekday * (cell + gap);
+      s += `<rect class="pop" ${delay(0.4 + wi * 0.018)} x="${x}" y="${y}" width="${cell}" height="${cell}" rx="3" fill="${t.heat[level(d.contributionCount)]}"><title>${d.contributionCount} on ${d.date}</title></rect>`;
+    });
+  });
+  [["Mon", 1], ["Wed", 3], ["Fri", 5]].forEach(([l, i]) => {
+    s += `<text x="${hx - 10}" y="${hy + i * (cell + gap) + 10}" text-anchor="end" font-size="11" fill="${t.muted}">${l}</text>`;
+  });
+  const ly = hy + 7 * (cell + gap) + 18;
+  let lx = W - 40 - 5 * (cell + gap) - 34;
+  s += `<text x="${lx - 8}" y="${ly + 10}" text-anchor="end" font-size="11" fill="${t.muted}">Less</text>`;
+  t.heat.forEach((c, i) => { s += `<rect x="${lx + i * (cell + gap)}" y="${ly}" width="${cell}" height="${cell}" rx="3" fill="${c}"/>`; });
+  s += `<text x="${lx + 5 * (cell + gap) + 4}" y="${ly + 10}" font-size="11" fill="${t.muted}">More</text>`;
+
+  // past-year highlights (nothing here repeats the other cards)
+  s += sectionTitle(t, 40, 640, "Past year highlights");
   const totals = [
-    ["PRs opened", prs.length.toLocaleString("en-US"), `${mergedAll} merged · all time`],
-    ["Lines added via PRs", fmt(prs.reduce((a, p) => a + p.additions, 0)), "public PRs"],
-    ["Repos contributed to", String(repoList.length), "open source"],
-    ["Stars on repos I've PR'd", fmt(combinedStars), "combined"],
+    ["Current streak", `${current} day${current === 1 ? "" : "s"}`, "and counting"],
     ["Longest streak", `${longest} days`, "past year"],
+    ["Active days", String(activeDays), `of 365`],
+    ["Best day", String(best.contributionCount), monDay(best.date)],
+    ["Busiest weekday", topWeekday.slice(0, 3), "most contributions"],
   ];
   totals.forEach(([k, v, sub], i) => {
     const x = 40 + i * 180;
-    s += `<g class="fade" style="animation-delay:${(0.8 + i * 0.08).toFixed(2)}s"><text x="${x}" y="466" font-size="13" fill="${t.muted}">${esc(k)}</text>
-<text x="${x}" y="494" font-size="22" font-weight="700" fill="${t.text}">${esc(v)}</text>
-<text x="${x}" y="514" font-size="12" fill="${t.faint}">${esc(sub)}</text></g>`;
-  });
-
-  // contributions by type bar
-  s += `<text x="40" y="566" font-size="16" font-weight="600" fill="${t.text}">Contributions by type</text>`;
-  const bx = 40, bw = 600, by = 582;
-  s += `<rect x="${bx}" y="${by}" width="${bw}" height="10" rx="5" fill="${t.track}"/>`;
-  let cx = bx;
-  legend.forEach((l, i) => {
-    const w = Math.max(l.v ? 4 : 0, (l.v / recentTotal) * bw);
-    if (!w) return;
-    s += `<rect class="grow" style="animation-delay:${(1 + i * 0.1).toFixed(1)}s" x="${cx.toFixed(1)}" y="${by}" width="${Math.max(0, w - 3).toFixed(1)}" height="10" rx="3" fill="${l.c}"/>`;
-    cx += w;
-  });
-  let lx = 40;
-  legend.forEach((l) => {
-    const label = `${l.name}  ${fmt(l.v)}`;
-    s += `<rect x="${lx}" y="${612}" width="10" height="10" rx="2" fill="${l.c}"/><text x="${lx + 16}" y="${621}" font-size="13" fill="${t.text}">${esc(l.name)} <tspan fill="${t.muted}">${fmt(l.v)}</tspan></text>`;
-    lx += textW(label, 13) + 40;
+    s += `<g class="fade" ${delay(0.8 + i * 0.08)}><text x="${x}" y="674" font-size="13" fill="${t.muted}">${esc(k)}</text>
+<text x="${x}" y="702" font-size="22" font-weight="700" fill="${t.text}">${esc(v)}</text>
+<text x="${x}" y="722" font-size="12" fill="${t.faint}">${esc(sub)}</text></g>`;
   });
   s += `</svg>\n`;
   writeFileSync(`assets/activity-${name}.svg`, s);
@@ -298,49 +377,44 @@ function oss(name) {
   const t = themes[name];
   const rows = repoList.slice(0, 8);
   const W = 960, rowH = 46, top = 250, H = top + rows.length * rowH + 64;
-  let s = frame(t, W, H, ["Open source", "Pull requests", "All time"], [{ label: "Repo", on: true }]);
+  let s = frame(t, W, H, ["Open source", "Pull requests", "All time"], [{ label: "By repo", on: true }]);
 
   s += `<text class="fade" x="40" y="124" font-size="48" font-weight="800" fill="${t.text}" letter-spacing="-1">${ext.length}</text>`;
-  s += `<text class="fade" x="40" y="150" font-size="14" fill="${t.muted}">pull requests to ${repoList.length} open-source repos</text>`;
-  const mini = [
-    ["Merged", extMerged, t.blue], ["In review", extOpen, t.accent], ["Closed", ext.length - extMerged - extOpen, t.faint],
-  ];
+  s += `<text class="fade" x="40" y="150" font-size="14" fill="${t.muted}">PRs to ${repoList.length} repos · +${fmt(extAdds)} lines · ${fmt(combinedStars)}★ combined</text>`;
+  const mini = [["Merged", extMerged, t.o1], ["In review", extOpen, t.o2], ["Closed", ext.length - extMerged - extOpen, t.gray]];
   mini.forEach(([k, v, c], i) => {
-    const x = 420 + i * 170;
-    s += `<g class="fade" style="animation-delay:${(0.2 + i * 0.1).toFixed(1)}s"><circle cx="${x + 5}" cy="${98}" r="5" fill="${c}"/><text x="${x + 18}" y="103" font-size="14" fill="${t.muted}">${k}</text>
+    const x = 450 + i * 160;
+    s += `<g class="fade" ${delay(0.2 + i * 0.1)}><circle cx="${x + 5}" cy="98" r="5" fill="${c}"/><text x="${x + 18}" y="103" font-size="14" fill="${t.muted}">${k}</text>
 <text x="${x}" y="140" font-size="26" font-weight="700" fill="${t.text}">${v}</text></g>`;
   });
-  // status bar
-  const bx = 420, bw = 500, by = 160;
+  const bx = 450, bw = 470, by = 160;
   s += `<rect x="${bx}" y="${by}" width="${bw}" height="8" rx="4" fill="${t.track}"/>`;
   let cx = bx;
   mini.forEach(([, v, c], i) => {
     const w = (v / ext.length) * bw;
     if (w < 1) return;
-    s += `<rect class="grow" style="animation-delay:${(0.5 + i * 0.1).toFixed(1)}s" x="${cx.toFixed(1)}" y="${by}" width="${Math.max(0, w - 3).toFixed(1)}" height="8" rx="3" fill="${c}"/>`;
+    s += `<rect class="grow" ${delay(0.5 + i * 0.1)} x="${cx.toFixed(1)}" y="${by}" width="${Math.max(0, w - 3).toFixed(1)}" height="8" rx="3" fill="${c}"/>`;
     cx += w;
   });
 
-  s += `<text x="40" y="214" font-size="16" font-weight="600" fill="${t.text}">Breakdown</text>`;
-  const cols = { n: 52, repo: 76, stars: 560, merged: 650, share: 720, prs: 920 };
-  s += `<g font-size="12" font-weight="600" fill="${t.muted}"><text x="${cols.n}" y="240">#</text><text x="${cols.repo}" y="240">Repository</text><text x="${cols.stars + 40}" y="240" text-anchor="end">Stars</text><text x="${cols.merged + 30}" y="240" text-anchor="end">Merged</text><text x="${cols.share}" y="240">Share</text><text x="${cols.prs}" y="240" text-anchor="end">PRs</text></g>`;
+  s += sectionTitle(t, 40, 214, "Breakdown");
+  const cols = { n: 52, repo: 76, stars: 600, merged: 680, share: 720, prs: 920 };
+  s += `<g font-size="12" font-weight="600" fill="${t.muted}"><text x="${cols.n}" y="240">#</text><text x="${cols.repo}" y="240">Repository</text><text x="${cols.stars}" y="240" text-anchor="end">Stars</text><text x="${cols.merged}" y="240" text-anchor="end">Merged</text><text x="${cols.share}" y="240">Share</text><text x="${cols.prs}" y="240" text-anchor="end">PRs</text></g>`;
   s += `<line x1="40" y1="250" x2="${W - 40}" y2="250" stroke="${t.border}"/>`;
   const maxN = rows[0]?.n || 1;
   rows.forEach((e, i) => {
     const y = top + i * rowH + 30;
-    const d = (0.3 + i * 0.07).toFixed(2);
     const [owner, repo] = e.name.split("/");
-    s += `<g class="fade" style="animation-delay:${d}s">`;
+    s += `<g class="fade" ${delay(0.3 + i * 0.07)}>`;
     s += `<text x="${cols.n}" y="${y}" font-size="13" fill="${t.faint}">${i + 1}</text>`;
     s += `<clipPath id="av${i}-${name}"><rect x="${cols.repo}" y="${y - 18}" width="24" height="24" rx="6"/></clipPath>`;
     s += `<image href="${avatars[e.name]}" x="${cols.repo}" y="${y - 18}" width="24" height="24" clip-path="url(#av${i}-${name})"/>`;
     s += `<text x="${cols.repo + 36}" y="${y}" font-size="15" fill="${t.muted}">${esc(owner)}/<tspan font-weight="600" fill="${t.text}">${esc(repo)}</tspan></text>`;
-    s += `<text x="${cols.stars + 40}" y="${y}" text-anchor="end" font-size="14" fill="${t.muted}">★ ${fmt(e.stars)}</text>`;
-    s += `<text x="${cols.merged + 30}" y="${y}" text-anchor="end" font-size="14" font-weight="600" fill="${e.merged ? t.blue : t.faint}">${e.merged || "–"}</text>`;
-    s += `</g>`;
-    s += `<rect x="${cols.share}" y="${y - 9}" width="140" height="8" rx="4" fill="${t.track}"/>`;
-    s += `<rect class="grow" style="animation-delay:${(0.5 + i * 0.07).toFixed(2)}s" x="${cols.share}" y="${y - 9}" width="${((e.n / maxN) * 140).toFixed(1)}" height="8" rx="4" fill="${t.accent}"/>`;
-    s += `<text class="fade" style="animation-delay:${d}s" x="${cols.prs}" y="${y}" text-anchor="end" font-size="15" font-weight="700" fill="${t.text}">${e.n}</text>`;
+    s += `<text x="${cols.stars}" y="${y}" text-anchor="end" font-size="14" fill="${t.muted}">★ ${fmt(e.stars)}</text>`;
+    s += `<text x="${cols.merged}" y="${y}" text-anchor="end" font-size="14" font-weight="600" fill="${e.merged ? t.o1 : t.faint}">${e.merged || "–"}</text>`;
+    s += `<text x="${cols.prs}" y="${y}" text-anchor="end" font-size="15" font-weight="700" fill="${t.text}">${e.n}</text></g>`;
+    s += `<rect x="${cols.share}" y="${y - 9}" width="150" height="8" rx="4" fill="${t.track}"/>`;
+    s += `<rect class="grow" ${delay(0.5 + i * 0.07)} x="${cols.share}" y="${y - 9}" width="${((e.n / maxN) * 150).toFixed(1)}" height="8" rx="4" fill="${t.o1}"/>`;
     if (i < rows.length - 1) s += `<line x1="40" y1="${y + 16}" x2="${W - 40}" y2="${y + 16}" stroke="${t.grid}"/>`;
     s += `\n`;
   });
@@ -350,39 +424,138 @@ function oss(name) {
   writeFileSync(`assets/oss-${name}.svg`, s);
 }
 
-// ------------------------------------------------------------------ toolbox card
-const stack = [
-  ["AI / ML", ["PyTorch", "LangGraph", "LangChain", "MCP", "Transformers", "Unsloth", "RL / GRPO"]],
-  ["Product", ["Python", "TypeScript", "FastAPI", "React", "Next.js", "Lean 4"]],
-  ["Data / infra", ["PostgreSQL", "Neo4j", "Qdrant", "Redis", "Docker", "GitHub Actions"]],
-];
+// ------------------------------------------------------------------ arcade card (games + Wordle replay)
+function arcade(name) {
+  const t = themes[name];
+  const W = 960, H = 500;
+  let s = frame(t, W, H, ["Arcade", "RL agents", `${GAMES.length + 1} games`], [{ label: "Wordle replay", on: true }]);
+  s = s.replace("</style>", `  .t { transform-box: fill-box; transform-origin: center; animation: flip .5s ease-in-out both; }
+  @keyframes flip { 0% { transform: scaleY(1); } 50% { transform: scaleY(0); } 100% { transform: scaleY(1); } }
+  .ch { opacity: 0; animation: fade .12s ease-out forwards; }
+  .win { transform-box: fill-box; transform-origin: center; animation: hop .4s ease-out both; }
+  @keyframes hop { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+  .pg { animation: pg .01s linear both; } @keyframes pg { from { fill: ${t.tileEmpty}; stroke: ${t.tileEdge}; } to { fill: ${t.o1}; stroke: ${t.o1}; } }
+  .py { animation: py .01s linear both; } @keyframes py { from { fill: ${t.tileEmpty}; stroke: ${t.tileEdge}; } to { fill: ${t.o2}; stroke: ${t.o2}; } }
+  .px { animation: px .01s linear both; } @keyframes px { from { fill: ${t.tileEmpty}; stroke: ${t.tileEdge}; } to { fill: ${t.faint}; stroke: ${t.faint}; } }
+</style>`);
 
+  // Wordle board
+  const answer = "AGENT", guesses = ["CRANE", "AMEND", "AGENT"];
+  const score = (g) => {
+    const res = Array(5).fill("x"), pool = {};
+    for (let i = 0; i < 5; i++) { if (g[i] === answer[i]) res[i] = "g"; else pool[answer[i]] = (pool[answer[i]] || 0) + 1; }
+    for (let i = 0; i < 5; i++) if (res[i] !== "g" && pool[g[i]]) { res[i] = "y"; pool[g[i]]--; }
+    return res;
+  };
+  const tile = 50, gap = 7, ox = 64, oy = 92;
+  const rowStart = (r) => 0.8 + r * 2.1;
+  for (let rr = 0; rr < 6; rr++) {
+    const g = guesses[rr], sc = g && score(g), win = g === answer;
+    for (let c = 0; c < 5; c++) {
+      const x = ox + c * (tile + gap), y = oy + rr * (tile + gap);
+      if (!g) { s += `<rect x="${x}" y="${y}" width="${tile}" height="${tile}" rx="6" fill="${t.tileEmpty}" stroke="${t.tileEdge}" stroke-width="2"/>`; continue; }
+      const flipAt = rowStart(rr) + c * 0.28;
+      s += `<g${win ? ` class="win" ${delay(rowStart(rr) + 1.8 + c * 0.1)}` : ""}><g class="t" ${delay(flipAt)}>` +
+        `<rect class="p${sc[c]}" ${delay(flipAt + 0.25)} x="${x}" y="${y}" width="${tile}" height="${tile}" rx="6" stroke-width="2"/>` +
+        `<text class="ch" ${delay(rowStart(rr) - 0.7 + c * 0.12)} x="${x + tile / 2}" y="${y + tile / 2 + 10}" text-anchor="middle" font-size="27" font-weight="800" fill="${name === "dark" ? "#fff" : t.text}">${g[c]}</text></g></g>\n`;
+    }
+  }
+  s += `<text class="fade" ${delay(rowStart(2) + 2.2)} x="${ox + (5 * tile + 4 * gap) / 2}" y="${oy + 6 * (tile + gap) + 18}" text-anchor="middle" font-size="13" fill="${t.muted}">scripted replay · AGENT in 3</text>`;
+  s += `<line x1="400" y1="84" x2="400" y2="${H - 28}" stroke="${t.border}"/>`;
+
+  // wordle-rl headline
+  const wr = repoInfo["wordle-rl"];
+  const x0 = 436, x1 = 920;
+  s += `<text x="${x0}" y="104" font-size="18" font-weight="700" fill="${t.text}">wordle-rl</text>`;
+  s += `<text x="${x1}" y="104" text-anchor="end" font-size="14" fill="${t.muted}">★ ${wr?.stargazerCount ?? 0}</text>`;
+  s += `<text x="${x0}" y="126" font-size="13" fill="${t.muted}">Gemma 3 270M taught Wordle on free Kaggle GPUs · $0 compute</text>`;
+  s += `<text class="fade" x="${x0}" y="178" font-size="44" font-weight="800" fill="${t.text}" letter-spacing="-1">97%</text>`;
+  s += `<text class="fade" x="${x0 + 100}" y="160" font-size="13" fill="${t.muted}">win rate on WordleBench</text>`;
+  s += `<text class="fade" x="${x0 + 100}" y="178" font-size="13" fill="${t.muted}">3.68 guesses on average</text>`;
+  [["Gemma 3 270M (mine)", 97, t.o1], ["GPT-5 (cited)", 99, t.gray]].forEach(([l, v, c], i) => {
+    const y = 210 + i * 30;
+    s += `<text x="${x0}" y="${y + 4}" font-size="13" fill="${t.text}">${l}</text>`;
+    s += `<rect x="${x0 + 150}" y="${y - 6}" width="280" height="10" rx="5" fill="${t.track}"/>`;
+    s += `<rect class="grow" ${delay(0.4 + i * 0.15)} x="${x0 + 150}" y="${y - 6}" width="${(v / 100) * 280}" height="10" rx="5" fill="${c}"/>`;
+    s += `<text x="${x1}" y="${y + 4}" text-anchor="end" font-size="13" font-weight="700" fill="${t.text}">${v}%</text>`;
+  });
+  s += `<text x="${x0}" y="270" font-size="11" fill="${t.faint}">270M params vs a frontier model · word-level decoding · GPT-5 score from the leaderboard</text>`;
+
+  // older games
+  s += `<line x1="${x0}" y1="292" x2="${x1}" y2="292" stroke="${t.border}"/>`;
+  s += `<text x="${x0}" y="322" font-size="13" font-weight="600" fill="${t.muted}">Earlier agents</text>`;
+  GAMES.forEach((g, i) => {
+    const y = 356 + i * 46;
+    const info = repoInfo[g.repo];
+    const tw = textW(g.tag, 11) + 16;
+    s += `<g class="fade" ${delay(0.6 + i * 0.1)}>`;
+    s += `<text x="${x0}" y="${y}" font-size="15" font-weight="600" fill="${t.text}">${esc(g.name)}</text>`;
+    s += `<rect x="${x0 + textW(g.name, 15) + 12}" y="${y - 14}" width="${tw}" height="19" rx="9.5" fill="${t.pill}" stroke="${t.border}"/>`;
+    s += `<text x="${x0 + textW(g.name, 15) + 12 + tw / 2}" y="${y}" text-anchor="middle" font-size="11" font-weight="600" fill="${t.o1}">${esc(g.tag)}</text>`;
+    s += `<text x="${x1}" y="${y}" text-anchor="end" font-size="13" fill="${t.muted}">★ ${info?.stargazerCount ?? 0}</text>`;
+    s += `<text x="${x0}" y="${y + 19}" font-size="13" fill="${t.muted}">${esc(g.desc)}</text></g>`;
+  });
+  s += `</svg>\n`;
+  writeFileSync(`assets/arcade-${name}.svg`, s);
+}
+
+// ------------------------------------------------------------------ project tiles (one SVG each so each is clickable)
+function projectTile(p, name) {
+  const t = themes[name];
+  const info = repoInfo[p.repo] || {};
+  const W = 460, H = 190;
+  let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="${FONT}">
+${STYLE}
+<rect x="1" y="1" width="${W - 2}" height="${H - 2}" rx="14" fill="${t.bg}" stroke="${t.border}"/>
+<rect x="24" y="24" width="36" height="36" rx="9" fill="${t.o1}"/>
+<text x="42" y="49" text-anchor="middle" font-size="18" font-weight="800" fill="#ffffff">${esc(p.title[0].toUpperCase())}</text>
+<text x="74" y="40" font-size="18" font-weight="700" fill="${t.text}">${esc(p.title)}</text>
+<text x="74" y="58" font-size="12" fill="${t.muted}">${esc(LOGIN)}/${esc(p.repo)}</text>
+`;
+  if (p.live) {
+    const w = textW(p.live, 12) + 34;
+    s += `<rect x="${W - 24 - w}" y="26" width="${w}" height="24" rx="12" fill="${t.pill}" stroke="${t.border}"/><circle cx="${W - 24 - w + 13}" cy="38" r="4" fill="${t.o1}"><animate attributeName="opacity" values="1;.25;1" dur="1.6s" repeatCount="indefinite"/></circle><text x="${W - 24 - w + 23}" y="42" font-size="12" font-weight="600" fill="${t.text}">${esc(p.live)}</text>`;
+  }
+  wrap(p.desc, 58).slice(0, 3).forEach((line, i) => {
+    s += `<text x="24" y="${92 + i * 20}" font-size="14" fill="${t.text}" fill-opacity=".86">${esc(line)}</text>`;
+  });
+  s += `<line x1="24" y1="${H - 44}" x2="${W - 24}" y2="${H - 44}" stroke="${t.grid}"/>`;
+  const lang = info.primaryLanguage?.name || "—";
+  const pushed = info.pushedAt ? new Date(info.pushedAt).toLocaleString("en-US", { month: "short", year: "numeric", timeZone: "UTC" }) : "";
+  s += `<circle cx="29" cy="${H - 21}" r="5" fill="${t.o1}"/><text x="40" y="${H - 17}" font-size="12" fill="${t.muted}">${esc(lang)}</text>`;
+  s += `<text x="${40 + textW(lang, 12) + 18}" y="${H - 17}" font-size="12" fill="${t.muted}">★ ${info.stargazerCount ?? 0}</text>`;
+  s += `<text x="${W - 24}" y="${H - 17}" text-anchor="end" font-size="12" fill="${t.faint}">updated ${pushed}</text>`;
+  s += `</svg>\n`;
+  writeFileSync(`assets/project-${p.repo}-${name}.svg`, s);
+}
+
+// ------------------------------------------------------------------ toolbox card
 function toolbox(name) {
   const t = themes[name];
   const W = 960, H = 410;
-  let s = frame(t, W, H, ["Toolbox", "Languages", `${user.repositories.totalCount} repos`], [{ label: "By bytes", on: true }]);
-  s += `<text x="40" y="100" font-size="16" font-weight="600" fill="${t.text}">Code by language</text>`;
+  let s = frame(t, W, H, ["Toolbox", "Languages", `${user.repositories.totalCount} public repos`], [{ label: "By bytes", on: true }]);
+  s += sectionTitle(t, 40, 100, "Code by language", { x: W - 40, html: "notebooks &amp; markup excluded" });
   const bx = 40, bw = W - 80, by = 116;
   let cx = bx;
-  langRows.forEach((l, i) => {
-    const w = (l.size / langTotal) * bw;
-    s += `<rect class="grow" style="animation-delay:${(i * 0.08).toFixed(2)}s" x="${cx.toFixed(1)}" y="${by}" width="${Math.max(0, w - 3).toFixed(1)}" height="12" rx="3" fill="${l.color}"/>`;
+  langRows.forEach(([lname, size], i) => {
+    const w = (size / langTotal) * bw;
+    s += `<rect class="grow" ${delay(i * 0.08)} x="${cx.toFixed(1)}" y="${by}" width="${Math.max(0, w - 3).toFixed(1)}" height="12" rx="3" fill="${lname === "Other" ? t.gray : t.ramp[i]}"/>`;
     cx += w;
   });
-  langRows.forEach((l, i) => {
+  langRows.forEach(([lname, size], i) => {
     const col = i % 4, row = Math.floor(i / 4);
     const x = 40 + col * 225, y = 160 + row * 28;
-    s += `<g class="fade" style="animation-delay:${(0.3 + i * 0.05).toFixed(2)}s"><rect x="${x}" y="${y - 10}" width="10" height="10" rx="2" fill="${l.color}"/><text x="${x + 18}" y="${y}" font-size="14" fill="${t.text}">${esc(l.name)} <tspan fill="${t.muted}">${pctStr(pct(l.size, langTotal))}</tspan></text></g>`;
+    s += `<g class="fade" ${delay(0.3 + i * 0.05)}><rect x="${x}" y="${y - 10}" width="10" height="10" rx="2" fill="${lname === "Other" ? t.gray : t.ramp[i]}"/><text x="${x + 18}" y="${y}" font-size="14" fill="${t.text}">${esc(lname)} <tspan fill="${t.muted}">${pctStr(pct(size, langTotal))}</tspan></text></g>`;
   });
-  s += `<line x1="40" y1="${218}" x2="${W - 40}" y2="${218}" stroke="${t.border}"/>`;
-  s += `<text x="40" y="254" font-size="16" font-weight="600" fill="${t.text}">Stack</text>`;
-  stack.forEach(([label, items], r) => {
-    const y = 280 + r * 40;
+  s += `<line x1="40" y1="218" x2="${W - 40}" y2="218" stroke="${t.border}"/>`;
+  s += sectionTitle(t, 40, 254, "Frameworks & infra");
+  STACK.forEach(([label, items], rr) => {
+    const y = 280 + rr * 40;
     s += `<text x="40" y="${y + 19}" font-size="13" fill="${t.muted}">${label}</text>`;
     let x = 160;
     items.forEach((it, j) => {
       const w = textW(it, 13) + 26;
-      s += `<g class="fade" style="animation-delay:${(0.5 + r * 0.15 + j * 0.04).toFixed(2)}s"><rect x="${x}" y="${y}" width="${w}" height="28" rx="14" fill="${t.pill}" stroke="${t.border}"/><text x="${x + w / 2}" y="${y + 19}" text-anchor="middle" font-size="13" font-weight="500" fill="${t.text}">${esc(it)}</text></g>`;
+      s += `<g class="fade" ${delay(0.5 + rr * 0.15 + j * 0.04)}><rect x="${x}" y="${y}" width="${w}" height="28" rx="14" fill="${t.pill}" stroke="${t.border}"/><text x="${x + w / 2}" y="${y + 19}" text-anchor="middle" font-size="13" font-weight="500" fill="${t.text}">${esc(it)}</text></g>`;
       x += w + 8;
     });
   });
@@ -391,5 +564,8 @@ function toolbox(name) {
 }
 
 mkdirSync("assets", { recursive: true });
-for (const th of ["dark", "light"]) { activity(th); oss(th); toolbox(th); }
-console.log(`built activity/oss/toolbox cards · ${recentTotal} contributions, ${prs.length} PRs, ${ext.length} external`);
+for (const th of ["dark", "light"]) {
+  activity(th); oss(th); arcade(th); toolbox(th);
+  for (const p of PROJECTS) projectTile(p, th);
+}
+console.log(`built cards · ${recentTotal} contributions (90d), ${yearTotal} (year), ${ext.length} OSS PRs`);
